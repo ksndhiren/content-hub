@@ -9,8 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkflowRouteImport } from './routes/workflow'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PerformanceRouteImport } from './routes/performance'
+import { Route as GraphicsRouteImport } from './routes/graphics'
+import { Route as CaptionsRouteImport } from './routes/captions'
+import { Route as BrandsRouteImport } from './routes/brands'
 import { Route as IndexRouteImport } from './routes/index'
 
+const WorkflowRoute = WorkflowRouteImport.update({
+  id: '/workflow',
+  path: '/workflow',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerformanceRoute = PerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GraphicsRoute = GraphicsRouteImport.update({
+  id: '/graphics',
+  path: '/graphics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CaptionsRoute = CaptionsRouteImport.update({
+  id: '/captions',
+  path: '/captions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrandsRoute = BrandsRouteImport.update({
+  id: '/brands',
+  path: '/brands',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +55,116 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/brands': typeof BrandsRoute
+  '/captions': typeof CaptionsRoute
+  '/graphics': typeof GraphicsRoute
+  '/performance': typeof PerformanceRoute
+  '/settings': typeof SettingsRoute
+  '/workflow': typeof WorkflowRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/brands': typeof BrandsRoute
+  '/captions': typeof CaptionsRoute
+  '/graphics': typeof GraphicsRoute
+  '/performance': typeof PerformanceRoute
+  '/settings': typeof SettingsRoute
+  '/workflow': typeof WorkflowRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/brands': typeof BrandsRoute
+  '/captions': typeof CaptionsRoute
+  '/graphics': typeof GraphicsRoute
+  '/performance': typeof PerformanceRoute
+  '/settings': typeof SettingsRoute
+  '/workflow': typeof WorkflowRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/brands'
+    | '/captions'
+    | '/graphics'
+    | '/performance'
+    | '/settings'
+    | '/workflow'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/brands'
+    | '/captions'
+    | '/graphics'
+    | '/performance'
+    | '/settings'
+    | '/workflow'
+  id:
+    | '__root__'
+    | '/'
+    | '/brands'
+    | '/captions'
+    | '/graphics'
+    | '/performance'
+    | '/settings'
+    | '/workflow'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BrandsRoute: typeof BrandsRoute
+  CaptionsRoute: typeof CaptionsRoute
+  GraphicsRoute: typeof GraphicsRoute
+  PerformanceRoute: typeof PerformanceRoute
+  SettingsRoute: typeof SettingsRoute
+  WorkflowRoute: typeof WorkflowRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workflow': {
+      id: '/workflow'
+      path: '/workflow'
+      fullPath: '/workflow'
+      preLoaderRoute: typeof WorkflowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/performance': {
+      id: '/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof PerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/graphics': {
+      id: '/graphics'
+      path: '/graphics'
+      fullPath: '/graphics'
+      preLoaderRoute: typeof GraphicsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/captions': {
+      id: '/captions'
+      path: '/captions'
+      fullPath: '/captions'
+      preLoaderRoute: typeof CaptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brands': {
+      id: '/brands'
+      path: '/brands'
+      fullPath: '/brands'
+      preLoaderRoute: typeof BrandsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,17 +177,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BrandsRoute: BrandsRoute,
+  CaptionsRoute: CaptionsRoute,
+  GraphicsRoute: GraphicsRoute,
+  PerformanceRoute: PerformanceRoute,
+  SettingsRoute: SettingsRoute,
+  WorkflowRoute: WorkflowRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
