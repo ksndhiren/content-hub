@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sparkles, Menu, Loader2, User2, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { Sparkles, Menu, Loader2, Sparkles as SparkIcon, User2, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { navItems } from "./Sidebar";
