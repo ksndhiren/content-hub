@@ -107,7 +107,7 @@ export function TopBar() {
         </div>
 
         <Button onClick={generate} disabled={generating} className="h-9 gap-2">
-          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <SparkIcon className="h-4 w-4" />}
+          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           <span className="hidden sm:inline">{generating ? "Generating..." : "Generate Weekly Batch"}</span>
           <span className="sm:hidden">{generating ? "..." : "Generate"}</span>
         </Button>
