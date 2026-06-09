@@ -1,26 +1,25 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useApp } from "@/lib/app-store";
 import { StatCard } from "@/components/StatCard";
-import { Images, ClipboardCheck, CheckCircle2, Calendar, TrendingUp, Trophy, Search } from "lucide-react";
-import { pipelineStages, stageColor } from "@/lib/mock-data";
+import { Images, ClipboardCheck, CheckCircle2, Calendar, Workflow, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [{ title: "Dashboard — Graphic Studio" }],
-  }),
+  head: () => ({ meta: [{ title: "Dashboard | Content Hub" }] }),
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const { selectedBrand, graphicsForView, selectedWeek } = useApp();
+  const { selectedBrand, graphicsForView, selectedWeek, socialAccounts } = useApp();
 
   const total = graphicsForView.length;
   const pending = graphicsForView.filter((g) => g.status === "Needs Review" || g.status === "Draft").length;
   const approved = graphicsForView.filter((g) => g.status === "Approved").length;
   const scheduled = graphicsForView.filter((g) => g.status === "Scheduled").length;
+  const hasContent = total > 0;
+  const hasChannels = socialAccounts.some((a) => a.status === "Connected");
 
   return (
     <AppLayout>
@@ -41,53 +40,48 @@ function DashboardPage() {
           <StatCard label="Pending review" value={pending} icon={ClipboardCheck} hint="Awaiting action" />
           <StatCard label="Approved" value={approved} icon={CheckCircle2} hint="Ready to schedule" />
           <StatCard label="Scheduled" value={scheduled} icon={Calendar} hint="Queued for publish" />
-          <StatCard label="Avg engagement" value="4.8%" icon={TrendingUp} delta={1.2} />
-          <StatCard label="Best platform" value="Instagram" icon={Trophy} hint="By engagement" />
-          <StatCard label="Keyword opportunities" value="27" icon={Search} hint="Found this week" />
-          <StatCard label="Posts published" value={12} icon={CheckCircle2} delta={8} />
         </div>
 
-        <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-base font-semibold">This week's content pipeline</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Track each stage from research to publish.</p>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-7 gap-3">
-            {pipelineStages.map((stage, i) => (
-              <div key={stage.name} className="rounded-lg border border-border bg-surface p-3">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Step {i + 1}</div>
-                <div className="font-medium text-sm mt-1">{stage.name}</div>
-                <Badge className={cn("mt-2 text-[10px] border-0", stageColor[stage.status])}>{stage.status}</Badge>
-              </div>
-            ))}
-          </div>
-        </section>
+        {!hasContent && (
+          <EmptyPanel
+            icon={Workflow}
+            title="No content for this week yet"
+            body="Run the agent pipeline to generate SEO opportunities, written copy and on-brand graphics."
+            cta={{ to: "/workflow", label: "Open AI Workflow" }}
+          />
+        )}
 
-        <section className="grid lg:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
-            <h3 className="text-sm font-semibold mb-3">Recent activity</h3>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-3"><span className="h-2 w-2 rounded-full bg-emerald-500 mt-1.5" /> <span><b>7 graphics</b> generated for {selectedBrand.name} · 2h ago</span></li>
-              <li className="flex items-start gap-3"><span className="h-2 w-2 rounded-full bg-blue-500 mt-1.5" /> Content Writer agent finished drafting captions · 3h ago</li>
-              <li className="flex items-start gap-3"><span className="h-2 w-2 rounded-full bg-amber-500 mt-1.5" /> Review Assistant flagged 2 captions · 4h ago</li>
-              <li className="flex items-start gap-3"><span className="h-2 w-2 rounded-full bg-violet-500 mt-1.5" /> 3 posts published to Instagram · 1d ago</li>
-            </ul>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="text-sm font-semibold mb-3">Top keyword opportunities</h3>
-            <ul className="space-y-2 text-sm">
-              {["graduate scheme advice", "cv writing tips", "interview prep", "first internship", "career change 2026"].map((k) => (
-                <li key={k} className="flex items-center justify-between">
-                  <span>{k}</span>
-                  <span className="text-xs text-muted-foreground">High intent</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        {!hasChannels && (
+          <EmptyPanel
+            icon={BarChart3}
+            title="No social channels connected"
+            body="Connect Meta (Instagram, Threads, Facebook), LinkedIn and X to pull real performance metrics."
+            cta={{ to: "/settings", label: "Connect channels" }}
+          />
+        )}
       </div>
     </AppLayout>
+  );
+}
+
+function EmptyPanel({
+  icon: Icon, title, body, cta,
+}: {
+  icon: typeof Workflow;
+  title: string;
+  body: string;
+  cta: { to: string; label: string };
+}) {
+  return (
+    <section className="rounded-xl border border-dashed border-border bg-card p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+      <div className="h-12 w-12 rounded-xl bg-surface grid place-items-center shrink-0">
+        <Icon className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div className="flex-1">
+        <div className="font-semibold">{title}</div>
+        <p className="text-sm text-muted-foreground mt-1">{body}</p>
+      </div>
+      <Button asChild><Link to={cta.to}>{cta.label}</Link></Button>
+    </section>
   );
 }

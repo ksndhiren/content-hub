@@ -14,7 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — Graphic Studio" }] }),
+  head: () => ({ meta: [{ title: "Settings | Content Hub" }] }),
   component: SettingsPage,
 });
 
@@ -32,14 +32,9 @@ function SettingsPage() {
   const [notifSlack, setNotifSlack] = useState(false);
 
   const toggleAccount = (platform: string) => {
-    setSocialAccounts(
-      socialAccounts.map((a) =>
-        a.platform === platform
-          ? { ...a, status: a.status === "Connected" ? "Not Connected" : "Connected" }
-          : a
-      )
-    );
-    toast.success("Account updated");
+    toast.info("OAuth flow not yet wired up, see docs/INTEGRATIONS.md", {
+      description: `Once configured, this will start the ${platform} authorisation flow.`,
+    });
   };
 
   return (
@@ -64,12 +59,12 @@ function SettingsPage() {
                 <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground grid place-items-center text-lg font-semibold">JS</div>
                 <div>
                   <div className="font-medium">Jamie Smith</div>
-                  <div className="text-xs text-muted-foreground">jamie@graphicstudio.app</div>
+                  <div className="text-xs text-muted-foreground">jamie@contenthub.app</div>
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="grid gap-2"><Label>Full name</Label><Input defaultValue="Jamie Smith" /></div>
-                <div className="grid gap-2"><Label>Email</Label><Input defaultValue="jamie@graphicstudio.app" /></div>
+                <div className="grid gap-2"><Label>Email</Label><Input defaultValue="jamie@contenthub.app" /></div>
                 <div className="grid gap-2"><Label>Role</Label><Input defaultValue="Content lead" /></div>
                 <div className="grid gap-2"><Label>Timezone</Label><Input defaultValue="Europe/London" /></div>
               </div>
@@ -78,18 +73,27 @@ function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="social" className="mt-4 space-y-3">
-            {socialAccounts.map((a) => (
-              <div key={a.platform} className="rounded-xl border border-border bg-card p-4 flex items-center gap-4">
-                <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium", platformIconColor[a.platform])}>{a.platform}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{a.handle}</div>
-                  <Badge className={cn("mt-1 text-[10px] border-0", accountStatusColor[a.status])}>{a.status}</Badge>
+            <div className="rounded-xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground">
+              Connect a brand's social channels to pull metrics and publish content. OAuth flows are wired up by
+              the backend, see <code>docs/INTEGRATIONS.md</code> for the full provider setup.
+            </div>
+            {(["Instagram", "Threads", "Facebook", "LinkedIn", "X"] as const).map((p) => {
+              const acc = socialAccounts.find((a) => a.platform === p);
+              return (
+                <div key={p} className="rounded-xl border border-border bg-card p-4 flex items-center gap-4">
+                  <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium", platformIconColor[p])}>{p}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{acc?.handle ?? "Not connected"}</div>
+                    <Badge className={cn("mt-1 text-[10px] border-0", accountStatusColor[acc?.status ?? "Not Connected"])}>
+                      {acc?.status ?? "Not Connected"}
+                    </Badge>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => toggleAccount(p)}>
+                    {acc?.status === "Connected" ? "Disconnect" : acc?.status === "Needs Reauth" ? "Reauthorise" : "Connect"}
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => toggleAccount(a.platform)}>
-                  {a.status === "Connected" ? "Disconnect" : a.status === "Needs Reauth" ? "Reauthorise" : "Connect"}
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </TabsContent>
 
           <TabsContent value="ai" className="mt-4">

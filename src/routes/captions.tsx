@@ -14,7 +14,7 @@ import { Copy, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/captions")({
-  head: () => ({ meta: [{ title: "Captions — Graphic Studio" }] }),
+  head: () => ({ meta: [{ title: "Captions | Content Hub" }] }),
   component: CaptionsPage,
 });
 

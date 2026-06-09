@@ -1,22 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useApp } from "@/lib/app-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AddBrandModal } from "@/components/AddBrandModal";
-import { Plus, Globe, Users, Volume2, Layers } from "lucide-react";
+import { Globe, Users, Volume2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { platformIconColor } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/brands")({
-  head: () => ({ meta: [{ title: "Brands — Graphic Studio" }] }),
+  head: () => ({ meta: [{ title: "Brands | Content Hub" }] }),
   component: BrandsPage,
 });
 
 function BrandsPage() {
   const { brands, setSelectedBrandId } = useApp();
-  const [open, setOpen] = useState(false);
 
   return (
     <AppLayout>
@@ -24,9 +21,10 @@ function BrandsPage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Brands</h1>
-            <p className="text-sm text-muted-foreground mt-1">Manage every brand workspace in one place.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Brand workspaces are provisioned via the backend. Contact an admin to onboard a new brand.
+            </p>
           </div>
-          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Add new brand</Button>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -60,8 +58,6 @@ function BrandsPage() {
           ))}
         </div>
       </div>
-
-      <AddBrandModal open={open} onClose={() => setOpen(false)} />
     </AppLayout>
   );
 }

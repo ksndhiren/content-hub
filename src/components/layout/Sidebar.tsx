@@ -30,7 +30,7 @@ export function Sidebar() {
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="leading-tight">
-          <div className="text-sm font-semibold">Graphic Studio</div>
+          <div className="text-sm font-semibold">Content Hub</div>
           <div className="text-[11px] text-muted-foreground">AI content workspace</div>
         </div>
       </div>

@@ -9,7 +9,7 @@ import type { Graphic, PostStatus } from "@/lib/mock-data";
 import { ImageOff } from "lucide-react";
 
 export const Route = createFileRoute("/graphics")({
-  head: () => ({ meta: [{ title: "Weekly Graphics — Graphic Studio" }] }),
+  head: () => ({ meta: [{ title: "Weekly Graphics | Content Hub" }] }),
   component: GraphicsPage,
 });
 

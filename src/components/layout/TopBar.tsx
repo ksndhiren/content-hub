@@ -51,7 +51,7 @@ export function TopBar() {
               <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground grid place-items-center">
                 <Sparkles className="h-4 w-4" />
               </div>
-              <div className="font-semibold text-sm">Graphic Studio</div>
+              <div className="font-semibold text-sm">Content Hub</div>
             </div>
             <nav className="p-3 space-y-1">
               {navItems.map((item) => {

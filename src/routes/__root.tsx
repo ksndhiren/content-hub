@@ -75,10 +75,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Graphic Studio — AI Content Dashboard" },
+      { title: "Content Hub | AI Content Dashboard" },
       { name: "description", content: "Manage weekly social media graphics and captions for multiple brands with AI." },
-      { name: "author", content: "Graphic Studio" },
-      { property: "og:title", content: "Graphic Studio" },
+      { name: "author", content: "Content Hub" },
+      { property: "og:title", content: "Content Hub" },
       { property: "og:description", content: "AI-powered weekly social media content management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
