@@ -18,22 +18,44 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Sparkles, Menu, Loader2, User2, LogOut, Settings as SettingsIcon } from "lucide-react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { navItems } from "./Sidebar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { runWeeklyPlan } from "@/lib/agents/pipeline.server";
+import { savePlan } from "@/lib/agents/plan-store.server";
 
 export function TopBar() {
   const { brands, selectedBrandId, setSelectedBrandId, weeks, selectedWeek, setSelectedWeek, selectedBrand } = useApp();
-  const [generating, setGenerating] = useState(false);
+  const [planning, setPlanning] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
 
-  const generate = async () => {
-    setGenerating(true);
-    toast.loading("Generating weekly batch...", { id: "gen" });
-    await new Promise((r) => setTimeout(r, 1600));
-    setGenerating(false);
-    toast.success(`New batch ready for ${selectedBrand.name}`, { id: "gen", description: "7 graphics added to review queue." });
+  /** Runs SEO + Writer for the current brand+week, saves the plan to disk, and
+   *  navigates to /workflow so the user can review and trigger graphics. We
+   *  deliberately DO NOT generate graphics here — that stays user-controlled. */
+  const planWeek = async () => {
+    setPlanning(true);
+    toast.loading(`Planning week for ${selectedBrand.name}…`, { id: "plan" });
+    try {
+      const plan = await runWeeklyPlan({
+        data: { brandId: selectedBrand.id, week: selectedWeek, postCount: 5 },
+      });
+      try {
+        await savePlan({ data: { plan } });
+      } catch (e) {
+        console.warn("Auto-save failed from TopBar:", e);
+      }
+      toast.success(`Plan ready, ${plan.posts.length} posts drafted`, {
+        id: "plan",
+        description: "Review the copy on the workflow page, then generate graphics on demand.",
+      });
+      if (pathname !== "/workflow") navigate({ to: "/workflow" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Planning failed", { id: "plan" });
+    } finally {
+      setPlanning(false);
+    }
   };
 
   return (
@@ -93,7 +115,7 @@ export function TopBar() {
           </Select>
 
           <Select value={selectedWeek} onValueChange={setSelectedWeek}>
-            <SelectTrigger className="h-9 w-[140px] sm:w-[210px] bg-surface border-border hidden sm:flex">
+            <SelectTrigger className="h-9 w-[160px] sm:w-[210px] bg-surface border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -106,10 +128,15 @@ export function TopBar() {
           </Select>
         </div>
 
-        <Button onClick={generate} disabled={generating} className="h-9 gap-2">
-          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          <span className="hidden sm:inline">{generating ? "Generating..." : "Generate Weekly Batch"}</span>
-          <span className="sm:hidden">{generating ? "..." : "Generate"}</span>
+        <Button
+          onClick={planWeek}
+          disabled={planning}
+          className="h-9 gap-2"
+          title="Runs the SEO and Writer agents for the selected brand and week. Graphics are generated separately on the Workflow page."
+        >
+          {planning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <span className="hidden sm:inline">{planning ? "Planning…" : "Plan Weekly Batch"}</span>
+          <span className="sm:hidden">{planning ? "…" : "Plan"}</span>
         </Button>
 
         <DropdownMenu>

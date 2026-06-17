@@ -8,9 +8,9 @@ export function getServerConfig() {
     nodeEnv: process.env.NODE_ENV,
     openaiApiKey: process.env.OPENAI_API_KEY,
     openaiImageModel: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
+    openaiImageQuality: (process.env.OPENAI_IMAGE_QUALITY || "medium") as "low" | "medium" | "high" | "auto",
     openaiChatModel: process.env.OPENAI_CHAT_MODEL || "gpt-4o-mini",
     openaiSearchModel: process.env.OPENAI_SEARCH_MODEL || "gpt-4o-mini-search-preview",
-    pexelsApiKey: process.env.PEXELS_API_KEY,
   };
 }
 

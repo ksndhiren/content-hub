@@ -13,7 +13,15 @@ For ONE brand, find what is genuinely trending and being talked about IN THE PAS
 2. Questions the audience is actually asking on Reddit, X/Twitter, LinkedIn, TikTok, forums in the past 30 days.
 3. Content gaps: themes the audience cares about that competitors are missing or doing badly.
 
+EDITORIAL MISSION (HARD RULES):
+- We EDUCATE early-career Gen Z (18-24): students, graduates, interns, first-job seekers.
+- Every opportunity must teach a skill, decode a process, share a tactic, debunk a myth, or hand them data they can act on.
+- DO NOT surface "Company X is hiring", "NGO Y is recruiting interns", job listings, employer spotlights, employer rankings, or any post that promotes a specific employer/NGO/charity/corporate. We are not a job board.
+- No naming a specific company, NGO, charity, university, or government body as the subject of the post. Use them only as anonymised data points ("a top-4 consulting firm", "a UK retailer") if absolutely needed.
+- Topics should feel like things a smart older sibling would tell them: CV tactics, interview frameworks, salary negotiation, skills that pay, AI for jobseekers, application math, mental models, common traps.
+
 SEARCH STRATEGY:
+- BUDGET: run AT MOST 4 web searches total. Pick high-leverage queries. Do not iterate endlessly.
 - Add date filters to your queries (current month name, current year, "this month", "past month") to bias results toward recency.
 - Prefer dated sources: news articles, dated blog posts, dated Reddit threads, dated LinkedIn posts.
 - For each opportunity, you MUST have seen at least one source published in the past 60 days. If you cannot find one, DROP that opportunity.
@@ -59,7 +67,14 @@ export function brandToBrief(b: (typeof initialBrands)[number]): BrandBrief {
 }
 
 export const runSeoAgent = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ brandId: z.string().min(1) }))
+  .inputValidator(
+    z.object({
+      brandId: z.string().min(1),
+      /** Optional competitor context from a fresh scan. Used to bias opportunities
+       *  toward gaps competitors haven't covered. */
+      competitorContext: z.string().optional(),
+    }),
+  )
   .handler(async ({ data }): Promise<SeoAgentOutput> => {
     const brand = initialBrands.find((b) => b.id === data.brandId);
     if (!brand) throw new Error(`Brand not found: ${data.brandId}`);
@@ -71,48 +86,72 @@ export const runSeoAgent = createServerFn({ method: "POST" })
     const todayIso = now.toISOString().slice(0, 10);
     const year = now.getUTCFullYear();
 
+    const competitorBlock = data.competitorContext
+      ? `
+
+COMPETITOR CONTEXT (just scanned, fresh from web search):
+${data.competitorContext}
+
+USE THIS to bias your opportunities toward:
+1. Gaps the competitors are NOT covering (highest priority).
+2. Angles where you can do better than what competitors are publishing.
+Avoid recommending opportunities a competitor has already covered well in the past 30 days.`
+      : "";
+
     const briefBlock = `Current date: ${todayIso} (year ${year}). Treat anything older than 60 days as stale unless it's evergreen.
 Brand: ${brand.name}
 Industry: ${brand.industry}
 Audience: ${brand.audience}
 Tone of voice: ${brand.tone}
-Website: ${brand.website ?? "n/a"}`;
+Website: ${brand.website ?? "n/a"}${competitorBlock}`;
 
     // ---------- STEP 1: research via Responses API + web_search tool ----------
     let researchProse = "";
     let researchSources: SeoSource[] = [];
     let searchError: string | undefined;
 
+    const SEARCH_TIMEOUT_MS = 180_000;
+    const t0 = Date.now();
+    console.log(`[seo-agent] ${brand.id}: step 1 research (web search) starting…`);
+
     try {
-      const res = await runWebSearchResearch(openai, briefBlock);
+      const res = await withTimeout(runWebSearchResearch(openai, briefBlock), SEARCH_TIMEOUT_MS, "Web search step timed out after 90s.");
       researchProse = res.text;
       researchSources = res.sources;
+      console.log(`[seo-agent] ${brand.id}: step 1 done in ${Date.now() - t0}ms, ${researchSources.length} sources`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn("Web search step failed:", msg);
+      console.warn(`[seo-agent] ${brand.id}: step 1 failed in ${Date.now() - t0}ms:`, msg);
       searchError = msg;
       // Fall back to plain reasoning so the pipeline still produces something.
-      const fallback = await openai.chat.completions.create({
-        model: openaiChatModel,
-        temperature: 0.7,
-        messages: [
-          { role: "system", content: "You have no web access. Return your best knowledge-only candidate opportunities and flag that this is NOT live-web-grounded." },
-          { role: "user", content: `${briefBlock}\n\nProduce 8-12 candidate opportunities as prose.` },
-        ],
-      });
+      const fallback = await withTimeout(
+        openai.chat.completions.create({
+          model: openaiChatModel,
+          temperature: 0.7,
+          messages: [
+            { role: "system", content: "You have no web access. Return your best knowledge-only candidate opportunities and flag that this is NOT live-web-grounded." },
+            { role: "user", content: `${briefBlock}\n\nProduce 8-12 candidate opportunities as prose.` },
+          ],
+        }),
+        30_000,
+        "Fallback reasoning step timed out after 30s.",
+      );
       researchProse = fallback.choices[0]?.message?.content ?? "";
     }
 
     // ---------- STEP 2: structure into JSON ----------
-    const structure = await openai.chat.completions.create({
-      model: openaiChatModel,
-      response_format: { type: "json_object" },
-      temperature: 0.3,
-      messages: [
-        { role: "system", content: STRUCTURE_SYSTEM },
-        {
-          role: "user",
-          content: `${briefBlock}
+    const t1 = Date.now();
+    console.log(`[seo-agent] ${brand.id}: step 2 structure starting…`);
+    const structure = await withTimeout(
+      openai.chat.completions.create({
+        model: openaiChatModel,
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+        messages: [
+          { role: "system", content: STRUCTURE_SYSTEM },
+          {
+            role: "user",
+            content: `${briefBlock}
 
 RESEARCH PROSE FROM STEP 1:
 """
@@ -120,9 +159,13 @@ ${researchProse}
 """
 
 Structure this into JSON now.`,
-        },
-      ],
-    });
+          },
+        ],
+      }),
+      30_000,
+      "Structuring step timed out after 30s.",
+    );
+    console.log(`[seo-agent] ${brand.id}: step 2 done in ${Date.now() - t1}ms`);
 
     const parsed = JSON.parse(structure.choices[0]?.message?.content ?? "{}");
 
@@ -212,4 +255,17 @@ function extractCitations(r: ResponsesApiResult): SeoSource[] {
   }
   // Dedupe by URL
   return Array.from(new Map(out.map((s) => [s.url, s])).values());
+}
+
+/** Wraps a promise in a hard timeout. Rejects with the given message if it
+ *  doesn't settle in time. Note: the underlying OpenAI call keeps running on
+ *  OpenAI's side, but we stop waiting for it. */
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); },
+    );
+  });
 }

@@ -30,6 +30,11 @@ export interface Brand {
   /** Display font family. Maps to a WOFF2 file under /public/fonts/{font}.woff2.
    *  Currently supported: "inter", "manrope", "dmsans". */
   font?: "inter" | "manrope" | "dmsans";
+  /** Short call-to-action shown in the outro footer (e.g. "Apply now", "Start free"). */
+  cta?: string;
+  /** Competitor brands the SEO + competitor-scan agents should monitor. Domains
+   *  are used directly in web search queries; titles are display labels. */
+  competitors?: { name: string; domain: string }[];
 }
 
 export interface Graphic {
@@ -67,19 +72,26 @@ export const initialBrands: Brand[] = [
     id: "internwise",
     name: "Internwise",
     industry: "EdTech / Careers",
-    audience: "University students & graduates aged 18-24 looking for internships and first jobs",
+    audience: "Gen Z (18-24) — UK university students, graduates, early job seekers looking for internships and first jobs. Mobile-first, social-native, sceptical of corporate-speak, expect speed and substance.",
     tone: "Smart, confident, peer-to-peer, like an older sibling who's been there. Encouraging but not patronising.",
     platforms: ["Instagram", "LinkedIn", "X"],
     weeklyVolume: 7,
     status: "Active",
     gradient: "gradient-1",
     initials: "IW",
-    website: "internwise.co.uk",
+    website: "www.internwise.co.uk",
     colors: ["#1e3a8a", "#fbbf24"],
     logoUrl: "/brands/internwise.png",
     font: "inter",
+    cta: "Apply now",
+    competitors: [
+      { name: "Save the Student", domain: "savethestudent.org" },
+      { name: "Bright Network", domain: "brightnetwork.co.uk" },
+      { name: "Prospects", domain: "prospects.ac.uk" },
+      { name: "RateMyApprenticeship", domain: "ratemyapprenticeship.co.uk" },
+    ],
     visualStyle:
-      "Sophisticated young-adult editorial graphic, Instagram-feed quality, aimed at 18-24 year-old uni students and graduates, NOT children. Build the design from CLEAN GEOMETRY: smooth deep-navy gradient backgrounds (#0b1f4a → #1e3a8a, or #1e3a8a → #4f46e5), soft-edged abstract shapes (rounded arches, blurred blobs, diagonal bands, concentric circles, soft squircles) layered with subtle drop shadows and inner-glow lighting for depth. Bright accent palette: warm sunshine yellow (#fbbf24), tangerine orange (#f97316), mint (#34d399). Hero element options (pick ONE per image): (a) a real photograph of a young adult (late teens to mid-twenties), handled by code, do not draw a person; OR (b) a clean photorealistic 3D-rendered object (a stylised brain, a glowing arch portal, a stack of letter tiles, a minimalist 3D laptop, a graduation cap, a paper CV with a stamp). 3D objects: Octane/Cycles studio-render quality, soft directional lighting, slight depth-of-field. Bold modern sans-serif display typography baked in: 1-4 key words, with solid-colour highlight blocks behind 1-2 of those words for emphasis. Small rounded pill-shaped chips with short label words. Reserve ~22% of one corner as quiet negative space for a logo overlay. STRICT RULES, DO NOT INCLUDE: starry backgrounds, star/sparkle particle accents, animated GIF-style motion lines, chibi/anime/cartoon faces, Pixar/Disney aesthetic, kids-book pastel palette, oversized cute eyes. The vibe is premium static editorial, Linear/Notion/Apple marketing crossed with Gen-Z LinkedIn.",
+      "Internwise is an editorial Gen-Z careers brand, the visual register sits between Apple/Linear marketing, Kinfolk/Pop magazine spreads, and high-end Instagram infographic accounts (visualscapital, chartr, futurism). Pick a different lane PER SLIDE — do not repeat: dark navy editorial, ivory + ink, full-bleed portrait, oversized number infographic, magazine-cover style, 3D still life, flat vector explainer, photoreal documentary, brutalist type poster, dusty-rose minimal. Brand palette (pull two per slide, ROTATE): deep navy #0b1f4a, sunshine yellow #fbbf24, tangerine #f97316, mint #34d399, coral #ef4444, ivory #faf6ee, ink #111111. Typography vibe to vary: modern editorial serif (Saol/Tiempos), brutalist condensed sans, handwritten accent, classic grotesque. Subjects, when human, are real 18-24-year-old students/graduates — mix ethnicities, vibes, settings every slide. Always reserve a clean ~22% top-left square as quiet space for the logo overlay. NEVER include: starry skies, sparkle particles, lens flares, chibi/anime, Pixar/Disney aesthetic, motivational stock-photo poses (high-fives, suits pointing at charts), watermarks, fake logos, illegible text, gen-AI uncanny perfection.",
   },
   {
     id: "reportingwise",
@@ -92,10 +104,16 @@ export const initialBrands: Brand[] = [
     status: "Active",
     gradient: "gradient-3",
     initials: "RW",
-    website: "reportingwise.com",
+    website: "www.reportingwise.com",
     colors: ["#0f766e", "#0d3b66"],
     logoUrl: "/brands/reportingwise.png",
     font: "manrope",
+    cta: "Get started",
+    competitors: [
+      { name: "Tableau", domain: "tableau.com" },
+      { name: "Looker", domain: "looker.com" },
+      { name: "Sisense", domain: "sisense.com" },
+    ],
     visualStyle:
       "Clean B2B SaaS editorial style. Calm teal and deep-navy palette with subtle data-viz motifs (sparkline curves, dashboard cards, donut fragments) as decorative background elements. Confident modern sans-serif typography with one colour highlight block. Minimal 3D iconography (chart icons, monitor frames). Plenty of negative space, feels expert, no-jargon, trustworthy. Reserve ~22% of one corner quiet for a logo overlay.",
   },
@@ -110,10 +128,16 @@ export const initialBrands: Brand[] = [
     status: "Active",
     gradient: "gradient-5",
     initials: "FH",
-    website: "florahr.com",
+    website: "www.florahr.com",
     colors: ["#16a34a", "#064e3b"],
     logoUrl: "/brands/flora-hr.png",
     font: "dmsans",
+    cta: "Book a demo",
+    competitors: [
+      { name: "BambooHR", domain: "bamboohr.com" },
+      { name: "Personio", domain: "personio.com" },
+      { name: "HiBob", domain: "hibob.com" },
+    ],
     visualStyle:
       "Warm, modern HR-tech editorial style. Soft sage-green and cream palette with botanical leaf accents and organic shapes. Friendly bold sans-serif typography with rounded italic emphasis and pill-shaped highlight chips. 3D-rendered diverse character or hand-drawn props (a plant, a calendar, a smiling person at a desk). Inviting, human, not corporate. Reserve ~22% of one corner quiet for a logo overlay.",
   },

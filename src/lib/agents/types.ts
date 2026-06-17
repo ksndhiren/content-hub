@@ -60,6 +60,32 @@ export type CaptionsByPlatform = Partial<Record<Platform, PlatformCaption>>;
 
 export type GraphicFormat = "photo-hero" | "3d-hero" | "infographic";
 
+/** Layout templates the SVG composer can render. Each variant has a very
+ *  different visual structure, so the weekly feed doesn't look like one template
+ *  with different photos.
+ *
+ *  - split-portrait → headline column on one side, AI image on the other (current default)
+ *  - stat-spotlight → giant number/percent dominates, supporting label below
+ *  - checklist     → headline top, 3-5 numbered card-rows in centre (true infographic)
+ *  - comparison    → two columns side-by-side with values (vs / before-after)
+ *  - quote         → centred pull quote with small attribution
+ *  - timeline      → 3-step horizontal flow with arrows
+ */
+export type LayoutVariant =
+  // New design-system layouts (match the Internwise reference deck)
+  | "hero-arch"          // big headline + accent word + arched corner photo (covers, outros, "the brutal job market")
+  | "stat-cards"         // eyebrow + headline + vertical stack of 2-3 stat cards + arched photo
+  | "bar-rows"           // eyebrow + headline + 3 horizontal rows (vs comparison) + bottom tagline
+  | "category-list"      // eyebrow + headline + 3 vertical category cards + arched photo
+  | "split-stats"        // eyebrow + headline + 2 huge stat boxes side-by-side + tagline
+  | "quote"              // centred pull quote (kept as-is)
+  // Legacy variants kept so old saved plans still render
+  | "split-portrait"
+  | "stat-spotlight"
+  | "checklist"
+  | "comparison"
+  | "timeline";
+
 export interface BrandedTool {
   /** Display name, e.g. "Zoom". */
   name: string;
@@ -67,8 +93,32 @@ export interface BrandedTool {
   domain: string;
 }
 
+/** Subtype tells the composer which palette role to use for an accent. */
+export type AccentTone = "positive" | "negative" | "neutral" | "highlight";
+
 export interface PostSlide {
   index: number;
+  /** Small uppercase eyebrow label above headline (e.g. "THE REALITY", "THE GAP"). */
+  eyebrow?: string;
+  /** Optional pill chip top-right (e.g. "2026 MARKET"). */
+  cornerBadge?: string;
+  /** 1-2 words in the headline to style differently (italic + accent). */
+  accentWord?: string;
+  /** Tone of the accent word — drives colour. */
+  accentTone?: AccentTone;
+  /** Final italic line at the bottom (e.g. "That's the bad news. Here's the good news."). */
+  bottomTagline?: string;
+  /** Same accent rule applied to bottomTagline. */
+  bottomTaglineAccent?: string;
+  /** What sits on the hero shape:
+   *  "human"   → Pexels search + local bg-removal (real student/professional)
+   *  "object"  → OpenAI image with transparent background (3D CV, calendar, clock, books)
+   *  "none"    → no cutout, pure data + decoration */
+  heroSubjectType?: "human" | "object" | "none";
+  /** Used when heroSubjectType = "object". A specific 3D-render-style prompt
+   *  for the object (e.g. "3D rendered paper CV with red REJECTED stamp,
+   *  studio lighting, isolated on transparent background"). */
+  heroObjectPrompt?: string;
   /** The big bold headline rendered ON the image. Must be a SPECIFIC claim,
    *  stat, hook or insight — not just the topic name. 3-6 words. */
   slideTitle: string;
@@ -87,6 +137,23 @@ export interface PostSlide {
   /** External tool/product brands mentioned by this slide. Their real logos
    *  get fetched and composited as chips so the AI doesn't have to fake them. */
   brandedTools?: BrandedTool[];
+  /** Which composer layout to render. When omitted, the composer treats it as "split-portrait". */
+  layoutVariant?: LayoutVariant;
+  /** For stat-spotlight layout: the headline number to render huge (e.g. "16%", "£45k", "7×"). */
+  bigStat?: string;
+  /** For stat-spotlight layout: the small label under the big number (e.g. "of applicants get hired"). */
+  bigStatLabel?: string;
+  /** For comparison layout: left and right column data. */
+  comparison?: { leftLabel: string; leftValue: string; rightLabel: string; rightValue: string };
+  /** Multiple ranked rows for "bar-rows" layout (matches the "Big corporate / Mid / Entry" reference).
+   *  The row with `winning: true` is highlighted in the positive-tone accent. */
+  barRows?: { label: string; value: string; tone: AccentTone; winning?: boolean }[];
+  /** Stat cards for "stat-cards" layout (matches the "140 applications / 7% fewer" reference). */
+  statCards?: { value: string; label: string; tone: AccentTone }[];
+  /** Category cards for "category-list" layout (matches the "AI / Health / Infrastructure" reference). */
+  categoryCards?: { title: string; subtitle: string; tone: AccentTone }[];
+  /** For quote layout: optional attribution under the quote. */
+  quoteAttribution?: string;
 }
 
 export interface PostPlan {
@@ -103,6 +170,33 @@ export interface PostPlan {
   slides: PostSlide[];
 }
 
+export interface CompetitorMove {
+  competitor: string;
+  domain: string;
+  topic: string;
+  publishedAround: string;
+  url: string;
+  summary: string;
+}
+
+export interface SpottedBrand {
+  name: string;
+  domain: string;
+  reason: string; // why we think this is a real competitor (1 line)
+}
+
+export interface CompetitorScanOutput {
+  brandId: string;
+  generatedAt: string;
+  summary: string;
+  moves: CompetitorMove[];
+  gaps: string[];
+  sources: { title: string; url: string }[];
+  /** New brands the model noticed publishing similar content. Auto-merged into the watch list. */
+  spottedBrands: SpottedBrand[];
+  searchError?: string;
+}
+
 export interface WeeklyPlan {
   brandId: string;
   week: string;
@@ -111,6 +205,8 @@ export interface WeeklyPlan {
   sources: SeoSource[];
   searchError?: string;
   posts: PostPlan[];
+  /** Optional competitor scan that fed into this plan. Saved alongside the plan. */
+  competitorScan?: CompetitorScanOutput;
 }
 
 // ---------- graphic agent output ----------
@@ -163,6 +259,5 @@ export interface GraphicAgentOutput {
   logos: Partial<Record<LogoVariant, { dataUrl: string; aspectRatio: number }>>;
   recommendedVariant: LogoVariant;
   initialPlacement: LogoPlacement;
-  heroPhoto?: PexelsPhotoInfo;
   brandedToolChips?: BrandedToolChip[];
 }

@@ -55,12 +55,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-4 border-t border-border">
-        <div className="rounded-lg bg-surface p-3 text-xs text-muted-foreground">
-          <div className="font-medium text-foreground mb-1">Weekly batch ready</div>
-          7 graphics waiting for review.
-        </div>
-      </div>
     </aside>
   );
 }
