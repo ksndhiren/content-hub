@@ -12,7 +12,7 @@
 name = "content-hub"
 compatibility_date = "2026-06-17"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".output/public"
+pages_build_output_dir = "dist"
 
 # R2 bucket binding. The bound name is `DATA` and is read by
 # src/lib/storage.server.ts via globalThis.DATA / process.env.DATA.
