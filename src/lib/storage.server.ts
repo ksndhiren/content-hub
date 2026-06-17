@@ -6,6 +6,7 @@
 import { mkdir, readFile, writeFile, readdir, unlink, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { getRequest } from "@tanstack/start-server-core";
 
 // Minimal subset of the R2Bucket interface we use. Avoids a hard dep on
 // @cloudflare/workers-types in non-Cloudflare environments.
@@ -22,13 +23,27 @@ interface R2Bucket {
   list(opts?: { prefix?: string; cursor?: string; limit?: number }): Promise<R2ListResult>;
 }
 
+function isR2(x: unknown): x is R2Bucket {
+  return !!x && typeof x === "object" && typeof (x as R2Bucket).put === "function";
+}
+
 function getR2Binding(): R2Bucket | undefined {
-  const candidate =
-    (globalThis as unknown as { DATA?: R2Bucket }).DATA ??
-    (process.env as unknown as { DATA?: R2Bucket }).DATA;
-  if (candidate && typeof candidate === "object" && typeof (candidate as R2Bucket).put === "function") {
-    return candidate as R2Bucket;
+  // Cloudflare Pages: Nitro attaches the worker env to the request object as
+  // request.runtime.cloudflare.env. We read it from the current request scope.
+  try {
+    const req = getRequest() as unknown as {
+      runtime?: { cloudflare?: { env?: Record<string, unknown> } };
+    };
+    const cfEnv = req?.runtime?.cloudflare?.env;
+    if (cfEnv && isR2(cfEnv.DATA)) return cfEnv.DATA;
+  } catch {
+    // not inside a request scope, fall through
   }
+  // Fallback: some Nitro presets (and `wrangler dev`) expose bindings here.
+  const fallback =
+    (globalThis as unknown as { DATA?: unknown }).DATA ??
+    (process.env as unknown as { DATA?: unknown }).DATA;
+  if (isR2(fallback)) return fallback;
   return undefined;
 }
 

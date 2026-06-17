@@ -149,23 +149,18 @@ export const initialBrands: Brand[] = [
   },
 ];
 
-// Weeks helper. Lists every Monday from a fixed start date forward to the
-// current week (newest first). Start anchor is Mon 11 May 2026 = "w/c 15 May".
-const WEEKS_START = new Date(Date.UTC(2026, 4, 11));
+// Weeks helper. Returns ONLY the current working week. We roll over to the
+// NEXT week's Monday on Sunday, so Monday-morning users land on the new week.
+// Mon-Sat → this Monday. Sun → next Monday.
 export const weeks: string[] = (() => {
-  const out: string[] = [];
   const now = new Date();
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const dow = today.getUTCDay(); // 0=Sun..6=Sat
+  const dow = today.getUTCDay(); // 0=Sun, 1=Mon..6=Sat
   const offsetToMon = (dow + 6) % 7;
-  const thisMonday = new Date(today);
-  thisMonday.setUTCDate(today.getUTCDate() - offsetToMon);
-  const cursor = new Date(thisMonday);
-  while (cursor.getTime() >= WEEKS_START.getTime()) {
-    out.push(`Week of ${cursor.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`);
-    cursor.setUTCDate(cursor.getUTCDate() - 7);
-  }
-  return out;
+  const monday = new Date(today);
+  monday.setUTCDate(today.getUTCDate() - offsetToMon);
+  if (dow === 0) monday.setUTCDate(monday.getUTCDate() + 7);
+  return [`Week of ${monday.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`];
 })();
 
 export const platformIconColor: Record<Platform, string> = {
