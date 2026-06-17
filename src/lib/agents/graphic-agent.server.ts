@@ -60,9 +60,14 @@ Same headline typeface on EVERY slide for brand consistency. Subhead + chip text
 At the BOTTOM of the canvas, inside the 8% safe padding, render ONLY the website URL "${brand.website}" in the same headline typeface family at small-to-medium size, high contrast against the background, fully legible. Centre-align it or align it bottom-left — whichever flows best with the composition. DO NOT render a CTA button, pill, "Apply now" label, "Click here", arrow, or any other button-like element — the URL alone is the footer. DO NOT abbreviate the URL. The written CTA already lives in the headline/subhead above; the footer is just the URL.\n`
       : "";
 
+    // Final reminder pinned to the end of the prompt — image models weight
+    // last-mile instructions more heavily for typography.
+    const finalTypographyReminder = `\n\nFINAL CHECK BEFORE RENDERING:
+The headline typeface is a HEAVY GEOMETRIC SANS-SERIF (PP Neue Montreal Bold / Söhne Breit / Inter Display Black). Flat terminals, no serifs, no brackets, no italic, no script. Even if the composition is "magazine cover" or "editorial" — the type is STILL geometric sans, never serif. If the headline you are about to render has any serifs, ball terminals, brackets, or calligraphic curves, REPLACE the typeface with a heavy geometric sans before rendering.`;
+
     const imgRes = await openai.images.generate({
       model: cfg.openaiImageModel,
-      prompt: safeZonePreamble + data.imagePrompt + ctaClause,
+      prompt: safeZonePreamble + data.imagePrompt + ctaClause + finalTypographyReminder,
       size: "1024x1024",
       n: 1,
       quality: cfg.openaiImageQuality,
@@ -71,17 +76,17 @@ At the BOTTOM of the canvas, inside the 8% safe padding, render ONLY the website
     const imageBase64 = imgRes?.data?.[0]?.b64_json ?? "";
     if (!imageBase64) throw new Error("Image generation returned no data");
 
-    // Logo: fetch the brand's favicon (mock-data.iconUrl) server-side and
-    // inline it as a data URL on the SVG. Cloudflare workers can do a network
-    // fetch but have no filesystem; this is the cleanest cross-runtime path.
-    const fetchedLogo = brand.iconUrl ? await fetchLogoAsDataUrl(brand.iconUrl) : null;
+    // Logo: fetch the brand's proper wordmark (mock-data.logoUrl) server-side
+    // and inline it as a data URL on the SVG. Cloudflare workers can do a
+    // network fetch but have no filesystem.
+    const fetchedLogo = brand.logoUrl ? await fetchLogoAsDataUrl(brand.logoUrl) : null;
     const logos: Partial<Record<LogoVariant, LogoInfo>> = fetchedLogo
       ? { default: fetchedLogo, white: fetchedLogo }
       : {};
     const cornerTone = await classifyCornerTone(openai, cfg.openaiChatModel, imageBase64);
     const recommendedVariant: LogoVariant = cornerTone === "dark" ? "white" : "default";
 
-    const LOGO_W = 0.14;
+    const LOGO_W = 0.22;
     const MARGIN = 0.04;
     const aspect = logos[recommendedVariant]?.aspectRatio ?? 1;
     const logoH = LOGO_W / aspect;
@@ -152,14 +157,16 @@ function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, plac
     const h = w / (logo.aspectRatio || 1);
     const x = placement.x * S;
     const y = placement.y * S;
-    // Rounded-square backplate so the favicon stays legible regardless of
-    // background. Plate colour follows the AI corner-tone read.
-    const pad = w * 0.18;
+    // Soft rounded-rect plate just behind the wordmark for legibility. White
+    // on dark corners, navy on light corners. Sized to hug the wordmark.
+    const padX = w * 0.12;
+    const padY = h * 0.4;
     const plateColor = cornerTone === "dark" ? "#ffffff" : "#0b1f4a";
-    const plateOpacity = cornerTone === "dark" ? 0.92 : 0.88;
+    const plateOpacity = 0.94;
+    const rx = Math.min((h + padY * 2) * 0.4, 36);
     logoNode = `
-  <rect x="${x - pad}" y="${y - pad}" width="${w + pad * 2}" height="${h + pad * 2}" rx="${(w + pad * 2) * 0.18}" fill="${plateColor}" fill-opacity="${plateOpacity}"/>
-  <image href="${logo.dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"/>`;
+  <rect x="${x - padX}" y="${y - padY}" width="${w + padX * 2}" height="${h + padY * 2}" rx="${rx}" fill="${plateColor}" fill-opacity="${plateOpacity}"/>
+  <image href="${logo.dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"${cornerTone === "light" ? " style=\"filter:brightness(0) invert(1)\"" : ""}/>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">
   <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${logoNode}
@@ -187,6 +194,17 @@ async function fetchLogoAsDataUrl(url: string): Promise<LogoInfo | null> {
       const w = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19];
       const h = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23];
       if (w > 0 && h > 0) aspect = w / h;
+    } else if (mime.includes("svg")) {
+      const text = new TextDecoder().decode(buf).slice(0, 4096);
+      const vb = text.match(/viewBox\s*=\s*["']([\d.\s-]+)["']/);
+      if (vb) {
+        const parts = vb[1].trim().split(/\s+/).map(Number);
+        if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) aspect = parts[2] / parts[3];
+      } else {
+        const wm = text.match(/<svg[^>]*\swidth\s*=\s*["']?([\d.]+)/i);
+        const hm = text.match(/<svg[^>]*\sheight\s*=\s*["']?([\d.]+)/i);
+        if (wm && hm) aspect = parseFloat(wm[1]) / parseFloat(hm[1]);
+      }
     }
     return { dataUrl: `data:${mime};base64,${b64}`, aspectRatio: aspect, mime };
   } catch {
