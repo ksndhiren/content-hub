@@ -13,6 +13,13 @@ import {
 import { toast } from "sonner";
 import { runWeeklyPlan, replacePost } from "@/lib/agents/pipeline.server";
 import { runGraphicAgent } from "@/lib/agents/graphic-agent.server";
+// Force-bundle the inner-agent server handlers. pipeline.server.ts calls
+// these server-to-server; without an import from a route, the TanStack Start
+// build leaves them as client stubs only and never registers handlers, so
+// the worker 500s with "Server function info not found".
+import "@/lib/agents/seo-agent.server";
+import "@/lib/agents/writer-agent.server";
+import "@/lib/agents/competitor-agent.server";
 import { savePlan, loadPlan, saveCompetitorScan, loadCompetitorScan } from "@/lib/agents/plan-store.server";
 import { saveGraphic, loadGraphicsForPlan, dropGraphicsForPost, dropAllGraphicsForWeek } from "@/lib/agents/graphic-store.server";
 import type { CompetitorScanOutput } from "@/lib/agents/types";
