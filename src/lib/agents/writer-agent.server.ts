@@ -300,6 +300,13 @@ const InputSchema = z.object({
     trends: z.array(z.string()),
     differentiate: z.string(),
   }).optional(),
+  /** Hard-assigned dominant visual lane for this post, set by the orchestrator
+   *  so every post in the week has a distinct identity. Writer treats this as
+   *  the cover slide's signature; body slides riff within the same lane. */
+  assignedLane: z.object({
+    name: z.string(),
+    brief: z.string(),
+  }).optional(),
 });
 
 export const runWriterAgent = createServerFn({ method: "POST" })
@@ -342,6 +349,16 @@ How to differentiate (apply across every imagePrompt):
 ${data.designIntel.differentiate}
 
 Use this brief to actively pull AWAY from the competitor look. Never copy. Take the same visual axes (palette, type, composition) and flip them so our feed stands apart while still being tasteful and on-brand.`
+    : ""
+}
+${
+  data.assignedLane
+    ? `
+ASSIGNED DESIGN LANE FOR THIS POST (NON-NEGOTIABLE):
+Lane: ${data.assignedLane.name}
+Brief: ${data.assignedLane.brief}
+
+This is the dominant visual identity for this entire post. The COVER slide MUST be a clear, unmistakable example of this lane. Body slides riff WITHIN the same lane — vary composition, weight, crop, and accent colour, but do not jump lanes. The outro can deviate slightly to bring optimism, but should still feel like a sibling of the cover. The orchestrator assigned a different lane to every other post in this week's feed, so each post stands apart at a glance.`
     : ""
 }
 

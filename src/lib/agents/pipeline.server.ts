@@ -125,6 +125,7 @@ export const runWeeklyPlan = createServerFn({ method: "POST" })
     console.log(`[plan] ${brand.id}: SEO done in ${Date.now() - overall}ms with ${opportunities.length} opportunities`);
 
     const formats = assignFormats(opportunities);
+    const lanes = assignDesignLanes(opportunities.length);
 
     // Writer runs are independent, run them in parallel with assigned formats.
     const tw = Date.now();
@@ -134,7 +135,7 @@ export const runWeeklyPlan = createServerFn({ method: "POST" })
     const posts = await Promise.all(
       opportunities.map((opp, i) =>
         runWriterAgent({
-          data: { brandId: brand.id, opportunity: opp, requestedFormat: formats[i], designIntel },
+          data: { brandId: brand.id, opportunity: opp, requestedFormat: formats[i], designIntel, assignedLane: lanes[i] },
         }),
       ),
     );
@@ -157,3 +158,37 @@ export const runWeeklyPlan = createServerFn({ method: "POST" })
       sources: plan.sources, // don't munge URLs
     };
   });
+
+// ---------- design-lane assignment ----------
+
+/** Catalogue of distinct visual lanes. Each lane is a one-line spatial +
+ *  palette + typography signature. The writer treats the assigned lane as
+ *  the post's dominant identity; slides inside the post riff on the same
+ *  lane with variations in composition and weight, not lane-jumping. */
+export interface DesignLane {
+  name: string;
+  brief: string;
+}
+
+const LANES: DesignLane[] = [
+  { name: "Editorial portrait",         brief: "Magazine-cover style. One human subject offset two-thirds, the other third is a calm brand-palette gradient reserved for typography. Shot-on-camera realism, Kinfolk aesthetic." },
+  { name: "Oversized number",           brief: "Single huge stat or percentage takes 60-70% of the canvas. Heavy modern sans, tight tracking. Background is a flat brand colour with one subtle texture (grain, gradient, dot grid). Caption is short and below the number." },
+  { name: "Brutalist type poster",      brief: "Typography is the entire artwork. Mixed weights and sizes of the same family, intentional overlaps, hard left alignment, off-grid placement. Two-tone palette only (one brand colour + one ink)." },
+  { name: "Flat vector explainer",      brief: "Notion / Linear marketing aesthetic. Simple geometric illustration of the concept (icons, shapes, arrows). Soft palette, subtle grain, no people. Headline sits on a calm band of negative space." },
+  { name: "3D still life",              brief: "Octane-render photoreal 3D objects (laptop, CV stack, calendar, books) on a coloured pedestal or floor. Soft directional lighting. Headline above or beside the object. No people." },
+  { name: "Documentary photo",          brief: "Wide environmental real photograph of the scene (a uni library, a tube platform, a co-working desk). Low contrast, natural light, subject NOT centred. Headline overlaid on a quiet zone." },
+  { name: "Minimal duotone",            brief: "Two colours only (one brand colour + ivory or ink). 70% negative space. Tiny precise headline top-left, one geometric accent shape. Feels like a Swiss design poster." },
+  { name: "Magazine cover",             brief: "Cover-lines styling: a SINGLE bold headline top, smaller dek beneath, masthead-style label. Big square photo or 3D object centred. Inspired by Monocle / Pop Magazine. Calm palette." },
+  { name: "Data-grid infographic",      brief: "Chart-like layout: 3-4 cards or bars with numbers, organised on a clean grid. Each card has its own pill of accent colour. No hero subject. Headline above the grid." },
+  { name: "Soft-light photo collage",   brief: "Two or three loosely overlapping photo crops with white border (Polaroid feel), warm bokeh, headline beside them in a tight serif or condensed sans. Romantic, intimate." },
+];
+
+/** Assign one distinct lane per post. Random starting point + ordered walk
+ *  through the catalogue gives a different mix each week without repeats
+ *  inside a single plan (until we exceed the catalogue size). */
+function assignDesignLanes(n: number): DesignLane[] {
+  const shuffled = [...LANES].sort(() => Math.random() - 0.5);
+  const out: DesignLane[] = [];
+  for (let i = 0; i < n; i++) out.push(shuffled[i % shuffled.length]);
+  return out;
+}
