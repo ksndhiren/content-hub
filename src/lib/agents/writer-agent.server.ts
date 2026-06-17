@@ -339,16 +339,17 @@ Brand colors (hex): ${(brand.colors ?? []).join(", ") || "neutral editorial pale
 Brand visual style (BAKE INTO IMAGE PROMPTS VERBATIM):
 ${brand.visualStyle ?? "Clean editorial composition with bold typography and brand palette."}
 ${
-  data.designIntel && (data.designIntel.trends.length || data.designIntel.differentiate)
+  data.designIntel && data.designIntel.trends.length
     ? `
 COMPETITOR DESIGN INTEL (THIS WEEK, from their published graphics):
-Trends observed:
+Trends observed (REPLICATE these design tropes in every imagePrompt):
 ${data.designIntel.trends.map((t) => `- ${t}`).join("\n")}
 
-How to differentiate (apply across every imagePrompt):
-${data.designIntel.differentiate}
-
-Use this brief to actively pull AWAY from the competitor look. Never copy. Take the same visual axes (palette, type, composition) and flip them so our feed stands apart while still being tasteful and on-brand.`
+DESIGN STRATEGY — MIRROR with BRAND SWAP (non-negotiable):
+Borrow the COMPOSITION, LAYOUT, IMAGE STYLE and overall design tropes from those competitor observations — we want to look like we belong in the same conversation. BUT swap two things every time:
+  1. Replace whatever colour palette competitors used with OUR brand palette (the hex codes listed above). Keep the brand colours dominant on every slide.
+  2. Replace whatever typeface they used with our brand HEADLINE font (heavy modern geometric sans — PP Neue Montreal / Söhne Breit / Inter Display Black vibe). Never display serif.
+Same look, our colours, our font. That is how we stay consistent.`
     : ""
 }
 ${

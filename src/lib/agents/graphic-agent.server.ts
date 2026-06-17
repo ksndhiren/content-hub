@@ -41,8 +41,18 @@ export const runGraphicAgent = createServerFn({ method: "POST" })
     const safeZonePreamble = `STRICT CANVAS RULES (read first, apply throughout):
 The output is a square 1024x1024 graphic shown with NO bleed on Instagram and LinkedIn. ALL headline text, subhead text, pill chips, faces, hands, and critical subject details MUST sit fully inside the central 84% of the frame — i.e. keep an 8% empty padding ring around every edge. Letters that touch any edge will be cropped and ruin the post. Also reserve a clean empty square in the TOP-LEFT corner roughly 22% of the canvas wide and tall — no text, no faces, no busy detail there, it's where a brand logo gets stamped afterwards. Treat both rules as non-negotiable.
 
-BRAND TYPOGRAPHY (OVERRIDE any font instruction in the prompt below — use this on every slide):
-Render the main HEADLINE in a heavy modern geometric sans-serif with a slight contemporary character — think "PP Neue Montreal Bold", "Söhne Breit Kräftig", "General Sans Bold", "Inter Display Black", or "Pangram Sans Black". Weight: bold to black. Tracking: tight. Case: title or sentence case (not all-caps). Crisp, confident, Gen Z editorial — the same vibe you see on Linear, Vercel, Substack and modern Instagram infographic accounts. Absolutely NO display serif, no "Saol", no "Tiempos", no "Times", no italic script, no handwritten, no condensed brutalist headline. Use this same headline typeface on EVERY slide for brand consistency. The subhead and chip text can be a lighter weight of the same family, or a clean neutral sans like Inter Regular.
+BRAND TYPOGRAPHY (HARD OVERRIDE — overrides every other font instruction in this prompt):
+The HEADLINE typeface is a heavy modern GEOMETRIC SANS-SERIF. Reference letterforms: PP Neue Montreal Bold, Söhne Breit Kräftig, General Sans Bold, Inter Display Black, or Pangram Sans Black. The letters MUST have FLAT terminals, low contrast strokes, NO brackets, NO serifs of any kind, NO ball terminals, NO calligraphic curves, NO finials, NO drop shadows, NO italics. Weight: bold to black. Tracking: tight. Case: title or sentence case (not all-caps).
+
+ABSOLUTELY BANNED on every slide (these are FAILURE conditions, regenerate if they appear):
+- Display serif (Saol, Tiempos, Times, Georgia, Playfair, GT Sectra, Canela, anything with serifs)
+- Slab serif
+- Italic script, calligraphy, handwritten
+- Brush, sketch, vintage, or hand-drawn lettering
+- Outlined or wireframe type
+- Gradient-filled letters
+
+Same headline typeface on EVERY slide for brand consistency. Subhead + chip text can be a lighter weight of the same family or a clean neutral sans (Inter Regular). If you would normally pair the composition with a serif headline (e.g. magazine-cover style), STILL use the geometric sans — that's the whole point of the brand.
 
 `;
     const ctaClause = data.showCta && brand.website
@@ -61,22 +71,24 @@ At the BOTTOM of the canvas, inside the 8% safe padding, render ONLY the website
     const imageBase64 = imgRes?.data?.[0]?.b64_json ?? "";
     if (!imageBase64) throw new Error("Image generation returned no data");
 
-    // Brand logos are currently AI-rendered inline. When real PNG assets are
-    // wired in later, swap these for static Vite imports (e.g.
-    // `import internwiseLogo from "@/assets/brands/internwise.png?inline"`)
-    // so they bundle into the JS — Cloudflare Pages has no filesystem at runtime.
-    const logos: Partial<Record<LogoVariant, LogoInfo>> = {};
+    // Logo: fetch the brand's favicon (mock-data.iconUrl) server-side and
+    // inline it as a data URL on the SVG. Cloudflare workers can do a network
+    // fetch but have no filesystem; this is the cleanest cross-runtime path.
+    const fetchedLogo = brand.iconUrl ? await fetchLogoAsDataUrl(brand.iconUrl) : null;
+    const logos: Partial<Record<LogoVariant, LogoInfo>> = fetchedLogo
+      ? { default: fetchedLogo, white: fetchedLogo }
+      : {};
     const cornerTone = await classifyCornerTone(openai, cfg.openaiChatModel, imageBase64);
     const recommendedVariant: LogoVariant = cornerTone === "dark" ? "white" : "default";
 
-    const LOGO_W = 0.22;
+    const LOGO_W = 0.14;
     const MARGIN = 0.04;
     const aspect = logos[recommendedVariant]?.aspectRatio ?? 1;
     const logoH = LOGO_W / aspect;
     const initialPlacement = placementForPosition("top-left", LOGO_W, logoH, MARGIN);
 
-    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement);
-    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement);
+    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement, cornerTone);
+    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement, cornerTone);
 
     const positionScores: LogoPositionScore[] = POSITIONS.map((p) => ({
       position: p,
@@ -131,16 +143,63 @@ async function classifyCornerTone(
   }
 }
 
-function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, placement: LogoPlacement): string {
+function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, placement: LogoPlacement, cornerTone: "light" | "dark" = "light"): string {
   const S = 1024;
   const href = `data:image/png;base64,${imageBase64}`;
-  const logoNode = logo
-    ? `<image href="${logo.dataUrl}" x="${placement.x * S}" y="${placement.y * S}" width="${placement.width * S}" preserveAspectRatio="xMinYMin meet"/>`
-    : "";
+  let logoNode = "";
+  if (logo) {
+    const w = placement.width * S;
+    const h = w / (logo.aspectRatio || 1);
+    const x = placement.x * S;
+    const y = placement.y * S;
+    // Rounded-square backplate so the favicon stays legible regardless of
+    // background. Plate colour follows the AI corner-tone read.
+    const pad = w * 0.18;
+    const plateColor = cornerTone === "dark" ? "#ffffff" : "#0b1f4a";
+    const plateOpacity = cornerTone === "dark" ? 0.92 : 0.88;
+    logoNode = `
+  <rect x="${x - pad}" y="${y - pad}" width="${w + pad * 2}" height="${h + pad * 2}" rx="${(w + pad * 2) * 0.18}" fill="${plateColor}" fill-opacity="${plateOpacity}"/>
+  <image href="${logo.dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"/>`;
+  }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">
-  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>
-  ${logoNode}
+  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${logoNode}
 </svg>`;
+}
+
+/** Fetch a remote logo URL and return it as a data URL so it embeds in the
+ *  SVG cleanly. Works on Cloudflare workers (no filesystem). Tries to read
+ *  the PNG width/height from the IHDR chunk so we keep aspect ratio; falls
+ *  back to assuming square if it can't. Returns null on any failure. */
+async function fetchLogoAsDataUrl(url: string): Promise<LogoInfo | null> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const mime = res.headers.get("content-type") || "image/png";
+    if (!mime.startsWith("image/")) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.length < 16) return null;
+    const b64 = bytesToBase64(buf);
+    let aspect = 1;
+    if (mime.includes("png") && buf[0] === 0x89 && buf[1] === 0x50) {
+      const w = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19];
+      const h = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23];
+      if (w > 0 && h > 0) aspect = w / h;
+    }
+    return { dataUrl: `data:${mime};base64,${b64}`, aspectRatio: aspect, mime };
+  } catch {
+    return null;
+  }
+}
+
+function bytesToBase64(buf: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < buf.length; i++) s += String.fromCharCode(buf[i]);
+  // btoa is available on workers + modern Node.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (globalThis as any).btoa(s);
 }
 
 function placementForPosition(pos: LogoPosition, w: number, h: number, margin: number): LogoPlacement {

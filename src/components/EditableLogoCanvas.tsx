@@ -145,11 +145,7 @@ export function EditableLogoCanvas({ data }: Props) {
               draggable={false}
             />
           </div>
-        ) : (
-          <div className="absolute inset-x-0 bottom-3 text-center text-[11px] text-white/90 bg-black/50 mx-3 py-1 rounded">
-            No logo found, drop one at <code>public/brands/{data.brandId}.png</code>
-          </div>
-        )}
+        ) : null}
       </div>
 
       {availableVariants.length > 1 && (
