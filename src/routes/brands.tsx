@@ -30,9 +30,13 @@ function BrandsPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {brands.map((b) => (
             <div key={b.id} className="rounded-xl border border-border bg-card overflow-hidden flex flex-col">
-              <div className={cn("h-24 relative", b.gradient)}>
+              <div className="h-24 relative" style={{ backgroundColor: b.colors?.[0] ?? "#1e3a8a" }}>
                 <div className="absolute inset-0 p-4 flex items-start justify-between">
-                  <div className="h-12 w-12 rounded-xl bg-white/95 text-foreground font-semibold grid place-items-center shadow-sm">{b.initials}</div>
+                  {b.iconUrl ? (
+                    <img src={b.iconUrl} alt="" className="h-12 w-12 rounded-xl bg-white object-contain p-2 shadow-sm" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-xl bg-white/95 text-foreground font-semibold grid place-items-center shadow-sm">{b.initials}</div>
+                  )}
                   <Badge className="bg-white/90 text-foreground border-0">{b.status}</Badge>
                 </div>
               </div>

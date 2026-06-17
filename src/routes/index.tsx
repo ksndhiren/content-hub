@@ -46,9 +46,13 @@ function DashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mt-1">{selectedBrand.name}</h1>
             <p className="text-sm text-muted-foreground mt-1">Snapshot of this week's content pipeline.</p>
           </div>
-          <div className={cn("hidden sm:flex h-14 w-14 rounded-xl items-center justify-center text-white font-semibold", selectedBrand.gradient)}>
-            {selectedBrand.initials}
-          </div>
+          {selectedBrand.iconUrl ? (
+            <img src={selectedBrand.iconUrl} alt="" className="hidden sm:block h-14 w-14 rounded-xl object-contain bg-white border border-border p-2" />
+          ) : (
+            <div className={cn("hidden sm:flex h-14 w-14 rounded-xl items-center justify-center text-white font-semibold", selectedBrand.gradient)}>
+              {selectedBrand.initials}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

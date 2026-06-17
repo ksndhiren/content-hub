@@ -23,6 +23,9 @@ export interface Brand {
   colors?: string[];
   /** Path under /public to the brand logo PNG (e.g. /brands/internwise.png). */
   logoUrl?: string;
+  /** Public URL of the brand's favicon, used as the small in-app brand icon
+   *  (sidebar, brand picker, dashboard hero). Falls back to gradient+initials. */
+  iconUrl?: string;
   /** Free-text visual style prompt passed to the writer/graphic agents.
    *  Describe palette, characters, type treatment, mood, props, anything
    *  the AI should bake into every image for this brand. */
@@ -79,9 +82,10 @@ export const initialBrands: Brand[] = [
     status: "Active",
     gradient: "gradient-1",
     initials: "IW",
-    website: "www.internwise.co.uk",
-    colors: ["#1e3a8a", "#fbbf24"],
+    website: "www.internwise.com",
+    colors: ["#1f4789", "#3eb5e4", "#ff9a60"],
     logoUrl: "/brands/internwise.png",
+    iconUrl: "https://www.google.com/s2/favicons?domain=internwise.com&sz=128",
     font: "inter",
     cta: "Apply now",
     competitors: [
@@ -105,8 +109,9 @@ export const initialBrands: Brand[] = [
     gradient: "gradient-3",
     initials: "RW",
     website: "www.reportingwise.com",
-    colors: ["#0f766e", "#0d3b66"],
+    colors: ["#1d2734", "#e6cf60"],
     logoUrl: "/brands/reportingwise.png",
+    iconUrl: "https://www.google.com/s2/favicons?domain=reportingwise.com&sz=128",
     font: "manrope",
     cta: "Get started",
     competitors: [
@@ -128,9 +133,10 @@ export const initialBrands: Brand[] = [
     status: "Active",
     gradient: "gradient-5",
     initials: "FH",
-    website: "www.florahr.com",
-    colors: ["#16a34a", "#064e3b"],
+    website: "www.flora-hr.co.uk",
+    colors: ["#2c5826", "#d5a952"],
     logoUrl: "/brands/flora-hr.png",
+    iconUrl: "https://www.google.com/s2/favicons?domain=flora-hr.co.uk&sz=128",
     font: "dmsans",
     cta: "Book a demo",
     competitors: [
@@ -143,15 +149,21 @@ export const initialBrands: Brand[] = [
   },
 ];
 
-// Weeks helper, generates the current and previous 3 ISO weeks dynamically.
+// Weeks helper. Lists every Monday from a fixed start date forward to the
+// current week (newest first). Start anchor is Mon 11 May 2026 = "w/c 15 May".
+const WEEKS_START = new Date(Date.UTC(2026, 4, 11));
 export const weeks: string[] = (() => {
   const out: string[] = [];
-  const d = new Date();
-  d.setDate(d.getDate() - d.getDay() + 1); // Monday of current week
-  for (let i = 0; i < 4; i++) {
-    const start = new Date(d);
-    start.setDate(d.getDate() - i * 7);
-    out.push(`Week of ${start.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric" })}`);
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const dow = today.getUTCDay(); // 0=Sun..6=Sat
+  const offsetToMon = (dow + 6) % 7;
+  const thisMonday = new Date(today);
+  thisMonday.setUTCDate(today.getUTCDate() - offsetToMon);
+  const cursor = new Date(thisMonday);
+  while (cursor.getTime() >= WEEKS_START.getTime()) {
+    out.push(`Week of ${cursor.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`);
+    cursor.setUTCDate(cursor.getUTCDate() - 7);
   }
   return out;
 })();

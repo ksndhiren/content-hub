@@ -104,9 +104,13 @@ export function TopBar() {
               {brands.map((b) => (
                 <SelectItem key={b.id} value={b.id}>
                   <div className="flex items-center gap-2">
-                    <div className={cn("h-5 w-5 rounded text-[10px] font-semibold text-white grid place-items-center", b.gradient)}>
-                      {b.initials}
-                    </div>
+                    {b.iconUrl ? (
+                      <img src={b.iconUrl} alt="" className="h-5 w-5 rounded object-contain bg-white" />
+                    ) : (
+                      <div className={cn("h-5 w-5 rounded text-[10px] font-semibold text-white grid place-items-center", b.gradient)}>
+                        {b.initials}
+                      </div>
+                    )}
                     {b.name}
                   </div>
                 </SelectItem>
