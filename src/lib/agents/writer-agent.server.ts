@@ -293,6 +293,13 @@ const InputSchema = z.object({
   /** Optional format hint from the orchestrator, when provided the writer
    *  MUST use it instead of picking. Lets the weekly planner control the mix. */
   requestedFormat: z.enum(["single", "carousel"]).optional(),
+  /** Optional design brief synthesised from the competitor visual scan. Tells
+   *  the writer how to bias its imagePrompts to differentiate from what
+   *  competitors are currently shipping. */
+  designIntel: z.object({
+    trends: z.array(z.string()),
+    differentiate: z.string(),
+  }).optional(),
 });
 
 export const runWriterAgent = createServerFn({ method: "POST" })
@@ -324,6 +331,19 @@ Brand colors (hex): ${(brand.colors ?? []).join(", ") || "neutral editorial pale
 
 Brand visual style (BAKE INTO IMAGE PROMPTS VERBATIM):
 ${brand.visualStyle ?? "Clean editorial composition with bold typography and brand palette."}
+${
+  data.designIntel && (data.designIntel.trends.length || data.designIntel.differentiate)
+    ? `
+COMPETITOR DESIGN INTEL (THIS WEEK, from their published graphics):
+Trends observed:
+${data.designIntel.trends.map((t) => `- ${t}`).join("\n")}
+
+How to differentiate (apply across every imagePrompt):
+${data.designIntel.differentiate}
+
+Use this brief to actively pull AWAY from the competitor look. Never copy. Take the same visual axes (palette, type, composition) and flip them so our feed stands apart while still being tasteful and on-brand.`
+    : ""
+}
 
 Active platforms for this brand: ${platformList}
 Per-platform rules:
