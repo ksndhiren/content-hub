@@ -204,10 +204,11 @@ export function EditableLogoCanvas({ data }: Props) {
   };
 
   return (
-    <div className="space-y-3 max-w-sm">
+    <div className="flex flex-col md:flex-row gap-4 items-start">
       <div
         ref={containerRef}
-        className="relative aspect-square w-full rounded-xl overflow-hidden border border-border bg-surface select-none"
+        className="relative aspect-square w-full md:w-[420px] md:max-w-[50%] rounded-xl overflow-hidden border border-border bg-surface select-none shrink-0"
+        style={{ containerType: "size" }}
       >
         <img
           src={baseSvgDataUrl}
@@ -281,17 +282,23 @@ export function EditableLogoCanvas({ data }: Props) {
               borderRadius: 9999,
               fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
               fontWeight: 600,
-              fontSize: `${urlFontPct * 100}cqi`,
+              // cqh resolves against the canvas container (parent has
+              // containerType: "size") so the URL text scales with the
+              // canvas, not with the URL pill's own width.
+              fontSize: `${urlFontPct * 100}cqh`,
               letterSpacing: "0.02em",
-              containerType: "inline-size",
               whiteSpace: "nowrap",
               overflow: "hidden",
+              textOverflow: "clip",
             }}
           >
             {brandWebsite}
           </div>
         ) : null}
       </div>
+
+      {/* Controls column — sits to the right of the canvas on md+ */}
+      <div className="flex-1 min-w-0 w-full space-y-3">
 
       {/* LOGO CONTROLS */}
       <div className="rounded-md border border-border p-3 space-y-2">
@@ -401,6 +408,7 @@ export function EditableLogoCanvas({ data }: Props) {
       <p className="text-[11px] text-muted-foreground">
         Drag the logo or URL pill to reposition. Each has its own size, plate and tone controls.
       </p>
+      </div>
     </div>
   );
 }
