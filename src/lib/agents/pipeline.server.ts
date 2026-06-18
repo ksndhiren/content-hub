@@ -129,13 +129,10 @@ export const runWeeklyPlan = createServerFn({ method: "POST" })
 
     // Writer runs are independent, run them in parallel with assigned formats.
     const tw = Date.now();
-    const designIntel = competitorScan?.designIntel
-      ? { trends: competitorScan.designIntel.trends, differentiate: competitorScan.designIntel.differentiate }
-      : undefined;
     const posts = await Promise.all(
       opportunities.map((opp, i) =>
         runWriterAgent({
-          data: { brandId: brand.id, opportunity: opp, requestedFormat: formats[i], designIntel, assignedLane: lanes[i] },
+          data: { brandId: brand.id, opportunity: opp, requestedFormat: formats[i], assignedLane: lanes[i] },
         }),
       ),
     );

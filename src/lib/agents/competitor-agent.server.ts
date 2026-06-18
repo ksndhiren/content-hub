@@ -5,7 +5,7 @@ import { getServerConfig } from "../config.server";
 import { initialBrands } from "../mock-data";
 import { cleanStringsDeep } from "./text-cleanup";
 import { loadCompetitorList } from "./competitor-store.server";
-import type { CompetitorScanOutput, DesignIntel } from "./types";
+import type { CompetitorScanOutput } from "./types";
 
 export type { CompetitorScanOutput, CompetitorMove } from "./types";
 
@@ -163,117 +163,8 @@ ${competitors.map((c) => `- ${c.name} (${c.domain})`).join("\n")}`;
       searchError,
     };
 
-    // Visual scan: read competitor OG images and synthesise a design brief.
-    // Best-effort; failures here never block the text scan from returning.
-    try {
-      result.designIntel = await runVisualScan(openai, openaiChatModel, brand.name, result.moves.map((m) => m.url).filter(Boolean));
-    } catch (e) {
-      console.warn(`[competitor-agent] ${brand.id}: visual scan failed:`, e);
-    }
-
     return cleanStringsDeep(result);
   });
-
-/** Reads each move URL's HTML, pulls the og:image URL, then asks a vision
- *  model to describe the design. Aggregates 4-8 observations into a single
- *  trend + differentiation brief. Cost: ~$0.01/scan with gpt-4o-mini vision. */
-async function runVisualScan(
-  openai: ReturnType<typeof getOpenAI>,
-  chatModel: string,
-  brandName: string,
-  urls: string[],
-): Promise<DesignIntel | undefined> {
-  if (!urls.length) return undefined;
-  const sliced = urls.slice(0, 8);
-  const ogImages: { source: string; image: string }[] = [];
-  await Promise.all(
-    sliced.map(async (u) => {
-      try {
-        const og = await fetchOgImage(u);
-        if (og) ogImages.push({ source: u, image: og });
-      } catch {
-        // skip
-      }
-    }),
-  );
-  if (!ogImages.length) return undefined;
-
-  // One vision call per image. Cheap (gpt-4o-mini vision) and parallelisable.
-  const observations = await Promise.all(
-    ogImages.map(async ({ source, image }) => {
-      try {
-        const res = await openai.chat.completions.create({
-          model: chatModel,
-          temperature: 0.2,
-          max_tokens: 120,
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: "Describe this graphic's DESIGN ONLY (not the topic): dominant palette, typography vibe, composition, mood. ONE tight sentence. No preamble." },
-                { type: "image_url", image_url: { url: image } },
-              ],
-            },
-          ],
-        });
-        return { source, note: (res.choices[0]?.message?.content ?? "").trim() };
-      } catch {
-        return null;
-      }
-    }),
-  );
-  const valid = observations.filter((o): o is { source: string; note: string } => !!o && !!o.note);
-  if (!valid.length) return undefined;
-
-  // Synthesis: turn N observations into trends + an anti-mirror brief.
-  const synth = await openai.chat.completions.create({
-    model: chatModel,
-    response_format: { type: "json_object" },
-    temperature: 0.4,
-    messages: [
-      {
-        role: "system",
-        content: `You distil per-image observations of competitor graphics into a design brief for "${brandName}". Return JSON only:
-{
-  "trends": [string],     // 2-4 concise observations of what competitors are doing visually right now
-  "differentiate": string // 1-3 sentences naming the SAME visual axes (palette, typography, composition) but flipping them, so our designs stand out while staying tasteful. Be specific. Reference hex-ish colour names and named typeface vibes.
-}
-Rules: no em-dashes, no en-dashes. Be opinionated. Don't recommend gimmicks.`,
-      },
-      { role: "user", content: `Observations:\n${valid.map((v) => `- ${v.note}`).join("\n")}\n\nNow produce the brief.` },
-    ],
-  });
-  const parsed = JSON.parse(synth.choices[0]?.message?.content ?? "{}");
-  return {
-    trends: Array.isArray(parsed.trends) ? parsed.trends.slice(0, 4).map((t: unknown) => String(t).trim()).filter(Boolean) : [],
-    differentiate: String(parsed.differentiate ?? "").trim(),
-    observedFrom: valid.map((v) => v.source),
-  };
-}
-
-/** Fetches a page and extracts its og:image (or twitter:image) URL. Returns
- *  the absolute image URL or null. Caps response read at ~64KB so we don't
- *  burn memory on huge pages — meta tags live in <head> which is always early. */
-async function fetchOgImage(pageUrl: string): Promise<string | null> {
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 8000);
-    const res = await fetch(pageUrl, {
-      signal: ctrl.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; ContentHub/1.0)" },
-    });
-    clearTimeout(t);
-    if (!res.ok) return null;
-    const html = (await res.text()).slice(0, 64_000);
-    const re = /<meta[^>]+(?:property|name)\s*=\s*["'](?:og:image|twitter:image)["'][^>]*content\s*=\s*["']([^"']+)["']/i;
-    const altRe = /<meta[^>]+content\s*=\s*["']([^"']+)["'][^>]*(?:property|name)\s*=\s*["'](?:og:image|twitter:image)["']/i;
-    const m = html.match(re) ?? html.match(altRe);
-    if (!m?.[1]) return null;
-    return new URL(m[1], pageUrl).href;
-  } catch {
-    return null;
-  }
-}
 
 async function runWebSearch(
   openai: { responses?: { create: (args: Record<string, unknown>) => Promise<unknown> } },

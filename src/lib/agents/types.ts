@@ -194,22 +194,7 @@ export interface CompetitorScanOutput {
   sources: { title: string; url: string }[];
   /** New brands the model noticed publishing similar content. Auto-merged into the watch list. */
   spottedBrands: SpottedBrand[];
-  /** Visual-design trends extracted from competitor OG/hero images. Feeds the
-   *  writer's imagePrompt so our designs ride relevant trend axes while
-   *  deliberately differentiating. Undefined when no images could be read. */
-  designIntel?: DesignIntel;
   searchError?: string;
-}
-
-export interface DesignIntel {
-  /** 2-4 short observations of what competitors are doing visually right now. */
-  trends: string[];
-  /** 1-3 sentences naming the same trend axis but inverting it, so the writer
-   *  has concrete "do the opposite" direction (e.g. "they're all dark navy + brutalist
-   *  serif → go ivory + condensed sans"). */
-  differentiate: string;
-  /** URLs of competitor images the model actually read, kept for debugging. */
-  observedFrom: string[];
 }
 
 export interface WeeklyPlan {
