@@ -177,9 +177,23 @@ function WorkflowPage() {
       });
       setGraphics((prev) => ({ ...prev, [k]: g }));
       // Persist so refresh / brand switch / week switch keeps the graphic.
-      void saveGraphic({
-        data: { brandId: selectedBrand.id, week: selectedWeek, slideKey: k, graphic: g },
-      }).catch((e) => console.warn("saveGraphic failed:", e));
+      // We await so failures surface as a toast instead of vanishing into
+      // the console. Save errors are real — user keeps the graphic in
+      // memory but it won't survive a reload.
+      try {
+        // Strip imageBase64 before save — it's duplicated inside both
+        // composedSvg and baseSvg, so storing it separately just bloats
+        // the R2 object (~1.5 MB saved per slide). Nothing reads the raw
+        // imageBase64 once the SVGs exist.
+        const slim = { ...g, imageBase64: "" };
+        await saveGraphic({
+          data: { brandId: selectedBrand.id, week: selectedWeek, slideKey: k, graphic: slim },
+        });
+      } catch (saveErr) {
+        const msg = saveErr instanceof Error ? saveErr.message : "Save failed";
+        console.warn("saveGraphic failed:", saveErr);
+        toast.error(`Saved to preview only — won't survive reload (${msg})`);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Image generation failed");
     } finally {
