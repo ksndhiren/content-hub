@@ -90,9 +90,11 @@ Aim for the typographic vibe of Visual Capitalist, Information is Beautiful, Pit
     const logoH = LOGO_W / aspect;
     const initialPlacement = placementForPosition("top-left", LOGO_W, logoH, MARGIN);
 
-    const urlText = data.showCta && brand.website ? brand.website.replace(/^https?:\/\//, "") : undefined;
-    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement, cornerTone, urlText);
-    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement, cornerTone, urlText);
+    // URL is now a client-controlled overlay (like the logo) — server no
+    // longer stamps it into the SVG. We pass brandWebsite + defaultShowUrl
+    // through the output so the client can render and toggle it.
+    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement, cornerTone);
+    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement, cornerTone);
 
     const positionScores: LogoPositionScore[] = POSITIONS.map((p) => ({
       position: p,
@@ -112,6 +114,9 @@ Aim for the typographic vibe of Visual Capitalist, Information is Beautiful, Pit
       recommendedVariant,
       initialPlacement,
       brandedToolChips: undefined,
+      brandWebsite: brand.website?.replace(/^https?:\/\//, ""),
+      defaultShowUrl: !!data.showCta,
+      cornerTone,
     };
   });
 
@@ -147,48 +152,33 @@ async function classifyCornerTone(
   }
 }
 
-function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, placement: LogoPlacement, cornerTone: "light" | "dark" = "light", urlText?: string): string {
+function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, placement: LogoPlacement, cornerTone: "light" | "dark" = "light"): string {
   const S = 1024;
   const href = `data:image/png;base64,${imageBase64}`;
+  // The composed SVG no longer bakes the logo's white/invert filter — the
+  // client toggle in EditableLogoCanvas drives that so the user can switch
+  // light/dark variants in real time. Server still draws the default-tone
+  // logo so the "raw" composed SVG (used by the carousel zip export) is
+  // self-sufficient when downloaded without client interaction.
   let logoNode = "";
   if (logo) {
     const w = placement.width * S;
     const h = w / (logo.aspectRatio || 1);
     const x = placement.x * S;
     const y = placement.y * S;
-    // Soft rounded-rect plate just behind the wordmark for legibility. White
-    // on dark corners, navy on light corners. Sized to hug the wordmark.
     const padX = w * 0.12;
     const padY = h * 0.4;
     const plateColor = cornerTone === "dark" ? "#ffffff" : "#0b1f4a";
     const plateOpacity = 0.94;
     const rx = Math.min((h + padY * 2) * 0.4, 36);
+    const invertOnLight = cornerTone === "light" ? ' style="filter:brightness(0) invert(1)"' : "";
     logoNode = `
   <rect x="${x - padX}" y="${y - padY}" width="${w + padX * 2}" height="${h + padY * 2}" rx="${rx}" fill="${plateColor}" fill-opacity="${plateOpacity}"/>
-  <image href="${logo.dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"${cornerTone === "light" ? " style=\"filter:brightness(0) invert(1)\"" : ""}/>`;
-  }
-  let urlNode = "";
-  if (urlText) {
-    const fontSize = 26;
-    const padX = 26;
-    const padY = 14;
-    const approxTextW = urlText.length * fontSize * 0.55;
-    const plateW = approxTextW + padX * 2;
-    const plateH = fontSize + padY * 2;
-    const x = (S - plateW) / 2;
-    const y = S - plateH - 38; // 38px from bottom edge
-    const plateFill = "#0b1f4a";
-    urlNode = `
-  <rect x="${x}" y="${y}" width="${plateW}" height="${plateH}" rx="${plateH / 2}" fill="${plateFill}" fill-opacity="0.92"/>
-  <text x="${S / 2}" y="${y + plateH / 2 + fontSize / 3}" text-anchor="middle" fill="#ffffff" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="${fontSize}" font-weight="600" letter-spacing="0.5">${escapeXml(urlText)}</text>`;
+  <image href="${logo.dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"${invertOnLight}/>`;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">
-  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${logoNode}${urlNode}
+  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${logoNode}
 </svg>`;
-}
-
-function escapeXml(s: string): string {
-  return s.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c] as string));
 }
 
 /** Fetch a remote logo URL and return it as a data URL so it embeds in the

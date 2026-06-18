@@ -260,4 +260,13 @@ export interface GraphicAgentOutput {
   recommendedVariant: LogoVariant;
   initialPlacement: LogoPlacement;
   brandedToolChips?: BrandedToolChip[];
+  /** Brand website (stripped of protocol) — surfaced to the client so the URL
+   *  overlay can render and toggle without re-reading mock-data. */
+  brandWebsite?: string;
+  /** Whether the URL overlay should be on by default (true for outro / single
+   *  slides). User can toggle in the editor. */
+  defaultShowUrl?: boolean;
+  /** AI-classified tone of the top-left logo zone. Drives the default
+   *  light/dark variant for both the logo and the URL overlay. */
+  cornerTone?: "light" | "dark";
 }
