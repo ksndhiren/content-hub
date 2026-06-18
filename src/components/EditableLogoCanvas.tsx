@@ -13,9 +13,12 @@ interface Props {
 type Tone = "light" | "dark";
 interface UrlState {
   show: boolean;
-  x: number;
+  /** Pill centre x (0..1 of canvas width). The pill width is auto-fit to text. */
+  cx: number;
+  /** Pill BOTTOM edge y (0..1 of canvas height). */
   y: number;
-  width: number;
+  /** Font size as a fraction of canvas height. ~0.025 = small, ~0.06 = large. */
+  fontPct: number;
   tone: Tone;
   plate: boolean;
 }
@@ -46,9 +49,9 @@ export function EditableLogoCanvas({ data }: Props) {
 
   const initialUrl = useMemo<UrlState>(() => ({
     show: !!data.defaultShowUrl && !!brandWebsite,
-    x: 0.18,
+    cx: 0.5,
     y: 0.94,
-    width: 0.64,
+    fontPct: 0.04,
     tone: cornerTone,
     plate: true,
   }), [data.defaultShowUrl, brandWebsite, cornerTone]);
@@ -95,7 +98,7 @@ export function EditableLogoCanvas({ data }: Props) {
     (e.target as Element).setPointerCapture(e.pointerId);
     const rect = containerRef.current.getBoundingClientRect();
     dragTarget.current = target;
-    const px = target === "logo" ? placement.x : url.x;
+    const px = target === "logo" ? placement.x : url.cx;
     const py = target === "logo" ? placement.y : url.y;
     dragInfo.current = { sx: e.clientX, sy: e.clientY, px, py, cw: rect.width, ch: rect.height };
   };
@@ -115,7 +118,7 @@ export function EditableLogoCanvas({ data }: Props) {
     } else {
       setUrl((u) => ({
         ...u,
-        x: clamp(d.px + dx, 0, 1 - u.width),
+        cx: clamp(d.px + dx, 0.05, 0.95),
         y: clamp(d.py + dy, 0.05, 1),
       }));
     }
@@ -134,9 +137,11 @@ export function EditableLogoCanvas({ data }: Props) {
   };
 
   const onUrlSizeChange = (v: number[]) => {
-    const newW = v[0] / 100;
-    setUrl((u) => ({ ...u, x: clamp(u.x, 0, 1 - newW), width: newW }));
+    // Slider 0..100 → fontPct 0.020..0.060 (2% to 6% of canvas height).
+    const newFontPct = 0.020 + (v[0] / 100) * 0.040;
+    setUrl((u) => ({ ...u, fontPct: newFontPct }));
   };
+  const urlSliderValue = Math.round(((url.fontPct - 0.020) / 0.040) * 100);
 
   const reset = () => {
     setPlacement(data.initialPlacement);
@@ -144,11 +149,10 @@ export function EditableLogoCanvas({ data }: Props) {
     setUrl(initialUrl);
   };
 
-  // URL overlay sizing. The plate hugs the text; the user's "width" slider
-  // becomes the MAX width that the text+padding can occupy.
-  const urlFontPct = 0.045;
-  const urlPlatePadY = 0.018;
-  const urlHeightPct = urlFontPct + urlPlatePadY * 2;
+  // URL overlay sizing — derived from the user-controlled fontPct so the
+  // pill auto-fits the text, no width slider needed.
+  const urlPlatePadYFrac = 0.4; // 40% of font height as vertical padding
+  const urlHeightPct = url.fontPct * (1 + urlPlatePadYFrac * 2);
   const urlBg = url.tone === "dark" ? "#ffffff" : "#0b1f4a";
   const urlFg = url.tone === "dark" ? "#0b1f4a" : "#ffffff";
 
@@ -264,32 +268,30 @@ export function EditableLogoCanvas({ data }: Props) {
           </div>
         ) : null}
 
-        {/* URL overlay */}
+        {/* URL overlay — pill auto-fits the text; Size slider drives fontPct */}
         {url.show && brandWebsite ? (
           <div
             onPointerDown={onPointerDown("url")}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
-            className="absolute touch-none cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-primary/60 flex items-center justify-center"
+            className="absolute touch-none cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-primary/60 flex items-center justify-center whitespace-nowrap"
             style={{
-              left: `${url.x * 100}%`,
+              // Translate by -50% so the cx anchor sits at the pill centre.
+              left: `${url.cx * 100}%`,
               top: `${(url.y - urlHeightPct) * 100}%`,
-              width: `${url.width * 100}%`,
+              transform: "translateX(-50%)",
               height: `${urlHeightPct * 100}%`,
+              padding: `0 ${url.fontPct * 0.55 * 100}cqh`,
               backgroundColor: url.plate ? `${urlBg}E8` : "transparent",
               color: urlFg,
               borderRadius: 9999,
               fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
               fontWeight: 600,
-              // cqh resolves against the canvas container (parent has
-              // containerType: "size") so the URL text scales with the
-              // canvas, not with the URL pill's own width.
-              fontSize: `${urlFontPct * 100}cqh`,
+              // cqh resolves against the canvas container so text scales
+              // with the canvas, not with the pill itself.
+              fontSize: `${url.fontPct * 100}cqh`,
               letterSpacing: "0.02em",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "clip",
             }}
           >
             {brandWebsite}
@@ -360,14 +362,14 @@ export function EditableLogoCanvas({ data }: Props) {
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground w-12 shrink-0">Size</span>
               <Slider
-                value={[Math.round(url.width * 100)]}
-                min={30}
-                max={95}
+                value={[urlSliderValue]}
+                min={0}
+                max={100}
                 step={1}
                 onValueChange={onUrlSizeChange}
                 className="flex-1"
               />
-              <span className="text-xs font-mono tabular-nums w-10 text-right">{Math.round(url.width * 100)}%</span>
+              <span className="text-xs font-mono tabular-nums w-10 text-right">{urlSliderValue}%</span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -438,17 +440,16 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
 }
 
 function drawUrlOverlay(ctx: CanvasRenderingContext2D, S: number, text: string, u: UrlState) {
-  const fontSize = Math.round(S * 0.045);
-  const padX = Math.round(S * 0.025);
-  const padY = Math.round(S * 0.018);
+  const fontSize = Math.round(S * u.fontPct);
+  const padX = Math.round(fontSize * 0.55);
+  const padY = Math.round(fontSize * 0.4);
   ctx.font = `600 ${fontSize}px Inter, ui-sans-serif, system-ui, sans-serif`;
   const textW = ctx.measureText(text).width;
-  const maxPlateW = u.width * S;
-  const plateW = Math.min(textW + padX * 2, maxPlateW);
+  const plateW = textW + padX * 2;
   const plateH = fontSize + padY * 2;
   const yBottom = u.y * S;
   const yTop = yBottom - plateH;
-  const xLeft = u.x * S + (u.width * S - plateW) / 2;
+  const xLeft = u.cx * S - plateW / 2;
   const bg = u.tone === "dark" ? "#ffffff" : "#0b1f4a";
   const fg = u.tone === "dark" ? "#0b1f4a" : "#ffffff";
   if (u.plate) {
