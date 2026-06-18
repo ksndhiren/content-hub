@@ -41,33 +41,31 @@ export const runGraphicAgent = createServerFn({ method: "POST" })
     const safeZonePreamble = `STRICT CANVAS RULES (read first, apply throughout):
 The output is a square 1024x1024 graphic shown with NO bleed on Instagram and LinkedIn. ALL headline text, subhead text, pill chips, faces, hands, and critical subject details MUST sit fully inside the central 84% of the frame — i.e. keep an 8% empty padding ring around every edge. Letters that touch any edge will be cropped and ruin the post. Also reserve a clean empty square in the TOP-LEFT corner roughly 22% of the canvas wide and tall — no text, no faces, no busy detail there, it's where a brand logo gets stamped afterwards. Treat both rules as non-negotiable.
 
-BRAND TYPOGRAPHY (HARD OVERRIDE — overrides every other font instruction in this prompt):
-The HEADLINE typeface is a heavy modern GEOMETRIC SANS-SERIF. Reference letterforms: PP Neue Montreal Bold, Söhne Breit Kräftig, General Sans Bold, Inter Display Black, or Pangram Sans Black. The letters MUST have FLAT terminals, low contrast strokes, NO brackets, NO serifs of any kind, NO ball terminals, NO calligraphic curves, NO finials, NO drop shadows, NO italics. Weight: bold to black. Tracking: tight. Case: title or sentence case (not all-caps).
+BRAND TYPOGRAPHY (apply to every slide):
+This is editorial-magazine typography, mixed serif + sans. Pick whichever fits the slide's lane:
+- DISPLAY SERIF for magazine-masthead headlines (think Saol Display, Tiempos Headline, GT Sectra) — used when the brief mentions "magazine cover", "masthead", "editorial display" or a cover-style layout.
+- HEAVY GEOMETRIC SANS for poster headlines and data labels (think PP Neue Montreal Bold, Söhne Breit Kräftig, Inter Display Black) — used when the brief is data-poster, infographic, or sans-headline lane.
+Italic accent on 1-2 words inside the headline is welcome.
+Body text, chart labels, source lines and chips use a CLEAN NEUTRAL SANS (Inter, Söhne, GT America). Numbers in charts can be display sans or display serif numerals — pick whichever reads cleanest at small size.
 
-ABSOLUTELY BANNED on every slide (these are FAILURE conditions, regenerate if they appear):
-- Display serif (Saol, Tiempos, Times, Georgia, Playfair, GT Sectra, Canela, anything with serifs)
-- Slab serif
-- Italic script, calligraphy, handwritten
-- Brush, sketch, vintage, or hand-drawn lettering
-- Outlined or wireframe type
-- Gradient-filled letters
+ABSOLUTELY BANNED (these tank the visual; regenerate if they appear):
+- Italic script, calligraphy, handwritten, brush, sketch
+- Comic, novelty, or game-show display fonts
+- Outlined-only letters with no fill
+- Gradient-filled letters or chrome effects
+- Times New Roman or default Word-document serif
 
-Same headline typeface on EVERY slide for brand consistency. Subhead + chip text can be a lighter weight of the same family or a clean neutral sans (Inter Regular). If you would normally pair the composition with a serif headline (e.g. magazine-cover style), STILL use the geometric sans — that's the whole point of the brand.
+Aim for the typographic vibe of Visual Capitalist, Information is Beautiful, Pitch, Pop magazine, Monocle.
 
 `;
-    const ctaClause = data.showCta && brand.website
-      ? `\n\nMANDATORY URL FOOTER (render inside the safe zone, do not omit):
-At the BOTTOM of the canvas, inside the 8% safe padding, render ONLY the website URL "${brand.website}" in the same headline typeface family at small-to-medium size, high contrast against the background, fully legible. Centre-align it or align it bottom-left — whichever flows best with the composition. DO NOT render a CTA button, pill, "Apply now" label, "Click here", arrow, or any other button-like element — the URL alone is the footer. DO NOT abbreviate the URL. The written CTA already lives in the headline/subhead above; the footer is just the URL.\n`
-      : "";
-
-    // Final reminder pinned to the end of the prompt — image models weight
-    // last-mile instructions more heavily for typography.
-    const finalTypographyReminder = `\n\nFINAL CHECK BEFORE RENDERING:
-The headline typeface is a HEAVY GEOMETRIC SANS-SERIF (PP Neue Montreal Bold / Söhne Breit / Inter Display Black). Flat terminals, no serifs, no brackets, no italic, no script. Even if the composition is "magazine cover" or "editorial" — the type is STILL geometric sans, never serif. If the headline you are about to render has any serifs, ball terminals, brackets, or calligraphic curves, REPLACE the typeface with a heavy geometric sans before rendering.`;
+    // No CTA / URL clause — code overlays the URL as an SVG layer afterwards
+    // (same approach as the logo). We also tell the model not to render any
+    // URL itself, so it doesn't compete with the overlay.
+    const noUrlClause = `\n\nDO NOT render any URL, website address, "www.", ".com", domain name, social handle, or "Apply now" / "Click here" button on the canvas. The URL is added as a code overlay after the image is generated.`;
 
     const imgRes = await openai.images.generate({
       model: cfg.openaiImageModel,
-      prompt: safeZonePreamble + data.imagePrompt + ctaClause + finalTypographyReminder,
+      prompt: safeZonePreamble + data.imagePrompt + noUrlClause,
       size: "1024x1024",
       n: 1,
       quality: cfg.openaiImageQuality,
@@ -92,8 +90,9 @@ The headline typeface is a HEAVY GEOMETRIC SANS-SERIF (PP Neue Montreal Bold / S
     const logoH = LOGO_W / aspect;
     const initialPlacement = placementForPosition("top-left", LOGO_W, logoH, MARGIN);
 
-    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement, cornerTone);
-    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement, cornerTone);
+    const urlText = data.showCta && brand.website ? brand.website.replace(/^https?:\/\//, "") : undefined;
+    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement, cornerTone, urlText);
+    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement, cornerTone, urlText);
 
     const positionScores: LogoPositionScore[] = POSITIONS.map((p) => ({
       position: p,
@@ -148,7 +147,7 @@ async function classifyCornerTone(
   }
 }
 
-function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, placement: LogoPlacement, cornerTone: "light" | "dark" = "light"): string {
+function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, placement: LogoPlacement, cornerTone: "light" | "dark" = "light", urlText?: string): string {
   const S = 1024;
   const href = `data:image/png;base64,${imageBase64}`;
   let logoNode = "";
@@ -168,9 +167,28 @@ function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, plac
   <rect x="${x - padX}" y="${y - padY}" width="${w + padX * 2}" height="${h + padY * 2}" rx="${rx}" fill="${plateColor}" fill-opacity="${plateOpacity}"/>
   <image href="${logo.dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"${cornerTone === "light" ? " style=\"filter:brightness(0) invert(1)\"" : ""}/>`;
   }
+  let urlNode = "";
+  if (urlText) {
+    const fontSize = 26;
+    const padX = 26;
+    const padY = 14;
+    const approxTextW = urlText.length * fontSize * 0.55;
+    const plateW = approxTextW + padX * 2;
+    const plateH = fontSize + padY * 2;
+    const x = (S - plateW) / 2;
+    const y = S - plateH - 38; // 38px from bottom edge
+    const plateFill = "#0b1f4a";
+    urlNode = `
+  <rect x="${x}" y="${y}" width="${plateW}" height="${plateH}" rx="${plateH / 2}" fill="${plateFill}" fill-opacity="0.92"/>
+  <text x="${S / 2}" y="${y + plateH / 2 + fontSize / 3}" text-anchor="middle" fill="#ffffff" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="${fontSize}" font-weight="600" letter-spacing="0.5">${escapeXml(urlText)}</text>`;
+  }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">
-  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${logoNode}
+  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${logoNode}${urlNode}
 </svg>`;
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c] as string));
 }
 
 /** Fetch a remote logo URL and return it as a data URL so it embeds in the

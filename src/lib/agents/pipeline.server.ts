@@ -168,16 +168,46 @@ export interface DesignLane {
 }
 
 const LANES: DesignLane[] = [
-  { name: "Editorial portrait",         brief: "Magazine-cover style. One human subject offset two-thirds, the other third is a calm brand-palette gradient reserved for typography. Shot-on-camera realism, Kinfolk aesthetic." },
-  { name: "Oversized number",           brief: "Single huge stat or percentage takes 60-70% of the canvas. Heavy modern sans, tight tracking. Background is a flat brand colour with one subtle texture (grain, gradient, dot grid). Caption is short and below the number." },
-  { name: "Brutalist type poster",      brief: "Typography is the entire artwork. Mixed weights and sizes of the same family, intentional overlaps, hard left alignment, off-grid placement. Two-tone palette only (one brand colour + one ink)." },
-  { name: "Flat vector explainer",      brief: "Notion / Linear marketing aesthetic. Simple geometric illustration of the concept (icons, shapes, arrows). Soft palette, subtle grain, no people. Headline sits on a calm band of negative space." },
-  { name: "3D still life",              brief: "Octane-render photoreal 3D objects (laptop, CV stack, calendar, books) on a coloured pedestal or floor. Soft directional lighting. Headline above or beside the object. No people." },
-  { name: "Documentary photo",          brief: "Wide environmental real photograph of the scene (a uni library, a tube platform, a co-working desk). Low contrast, natural light, subject NOT centred. Headline overlaid on a quiet zone." },
-  { name: "Minimal duotone",            brief: "Two colours only (one brand colour + ivory or ink). 70% negative space. Tiny precise headline top-left, one geometric accent shape. Feels like a Swiss design poster." },
-  { name: "Magazine cover",             brief: "Cover-lines styling: a SINGLE bold headline top, smaller dek beneath, masthead-style label. Big square photo or 3D object centred. Inspired by Monocle / Pop Magazine. Calm palette." },
-  { name: "Data-grid infographic",      brief: "Chart-like layout: 3-4 cards or bars with numbers, organised on a clean grid. Each card has its own pill of accent colour. No hero subject. Headline above the grid." },
-  { name: "Soft-light photo collage",   brief: "Two or three loosely overlapping photo crops with white border (Polaroid feel), warm bokeh, headline beside them in a tight serif or condensed sans. Romantic, intimate." },
+  {
+    name: "3D isometric diorama",
+    brief: "Photoreal 3D isometric scene: a small landscape carved into wedges (forest, factory, classroom, etc.) at slight 3/4 perspective with shallow depth of field. Each wedge represents a category — label each with thin grey leader lines pointing to a percentage and one-line description. Magazine-masthead headline top-left in mixed editorial type (large sans or display serif + small italic dek). Source line at the bottom. Inspired by the Visual Capitalist 'U.S. Carbon Offsets' diorama and 'Renewable Energy by Country' panels.",
+  },
+  {
+    name: "Photo-textured stacked bars",
+    brief: "Stacked bar chart with 4-5 columns running across the canvas, each segment filled with a real photographic texture relevant to the category (e.g. flooded street, wildfire, drought field). Numbers in white sit ON the segments; column totals sit above. Headline top-left in a heavy display sans with one word italic-accented in brand yellow or coral. Inspired by the Visual Capitalist 'Rising Cost of Climate Events' chart.",
+  },
+  {
+    name: "Half-circle gauge with photoreal hero",
+    brief: "A horizon-style half-rainbow gauge ($0 on the left, $100 on the right) sweeps across the upper half, gradient-coloured red→amber→green. Country/category labels with circular flag chips sit along the curve. Below, a single photoreal 3D rendered object (a coin, a globe, a passport) anchors the canvas. Magazine-cover headline above the gauge — mixed Saol/Tiempos display serif with a small all-caps eyebrow. Source line at the bottom. Inspired by Visual Capitalist 'Where Does $100 Lose the Most Value'.",
+  },
+  {
+    name: "Voronoi inside a 3D vessel",
+    brief: "A 3D rendered vessel (a bowl, a globe, a translucent box, a cupped hand) sits centre-frame with a voronoi-style data partition mapped onto its visible surface. Each cell is a category with a flag chip + a number ($, %, count). Vessel rim has soft shadowing. Magazine-cover headline above the vessel in mixed serif+sans display type, one word HUGE and overflowing slightly. Background is a clean brand-palette gradient. Inspired by Visual Capitalist 'The 30 Largest Exporters of Food'.",
+  },
+  {
+    name: "Character-cutout bar chart",
+    brief: "Tall, narrow vertical bars stacked side-by-side, each bar topped with a photoreal cutout 'character' representing the category (a graduate, a CV stack, a software icon, etc.) — same trick as the VC blockbusters chart but using career/student themes. Year or category labels at the base of each bar. Cinematic textured sky background (golden hour or storm). Heavy condensed-sans masthead headline top-left, one word italic-accented. Inspired by Visual Capitalist 'Biggest Summer Blockbusters'.",
+  },
+  {
+    name: "Magazine cover stat",
+    brief: "A single shock stat at huge scale dominates the top two-thirds, rendered in mixed editorial type (display serif numerals + italic accent word). Beneath: a smaller dek explaining the stat, then a horizontal row of 3-4 mini-stat callouts with thin leader lines pointing into a photoreal 3D rendered object that anchors the bottom. Source line at the very bottom. Reads like a magazine cover essay.",
+  },
+  {
+    name: "Annotated photograph",
+    brief: "One full-bleed photoreal photograph of a real young-adult subject in a specific environment (a tube platform, a library nook, a co-working space, a kitchen at 11pm). Thin white leader lines connect 3-4 callout labels with stats, decisions or scripts to specific elements of the photo. Magazine-masthead headline runs across the top in a heavy geometric sans with one italic accent word.",
+  },
+  {
+    name: "Comparison split poster",
+    brief: "Canvas split vertically (or diagonally) into two contrasting halves — one in warm brand palette, one in cool. Each half holds a label, a big stat and one supporting photoreal 3D object. Centre seam has a vertical 'VS' or year band. Headline runs across the top in mixed serif + sans editorial type. Cinematic shadows.",
+  },
+  {
+    name: "Process-flow infographic",
+    brief: "A horizontal or staircase process flow with 3-5 numbered steps, each step a small photoreal 3D vignette (a CV, a calendar, a video call, a handshake) connected by thin lines with arrows. Step labels and a short tactic per step. Magazine-masthead headline top in mixed editorial type. Subtle grain texture and brand-palette wash.",
+  },
+  {
+    name: "Editorial portrait + data card",
+    brief: "Three-quarter editorial portrait of a real young-adult subject occupying 60% of the canvas (offset right). On the empty 40% to the left, a stack of overlapping data cards (each card carries one stat with a tiny icon, source and percentage). Magazine-cover headline top in mixed serif+sans, italic accent. Soft natural light, Kinfolk colour grade.",
+  },
 ];
 
 /** Assign one distinct lane per post. Random starting point + ordered walk
