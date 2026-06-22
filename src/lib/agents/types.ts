@@ -125,6 +125,10 @@ export interface PostSlide {
   /** The subhead rendered under the headline ON the image. 6-12 words.
    *  Adds the concrete value behind the headline. */
   slideBody: string;
+  /** Explanatory body-copy paragraph rendered as a dedicated text column on
+   *  the image. 25-45 words, 2-3 lines, small clean sans. Makes the slide
+   *  stand alone as informative without needing the caption. */
+  slideExplainer?: string;
   /** Substantive chip labels rendered as pills on the image. Carry real
    *  information (e.g. "£45k starting", "Python required", "Remote-friendly"),
    *  NOT generic decoration ("Real experience", "High paying"). 2-4 chips. */

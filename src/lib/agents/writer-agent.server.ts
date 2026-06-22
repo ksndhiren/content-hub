@@ -43,10 +43,11 @@ Return ONLY valid JSON matching this schema:
   "graphicFormat": "photo-hero" | "3d-hero" | "infographic",
   "slides": [
     {
-      "slideTitle": string,    // 3-6 words. The BOLD HEADLINE TEXT THAT IS RENDERED ON THE IMAGE. Must be a specific claim. Quote-worthy.
-      "slideBody": string,     // 6-12 words. The SUBHEAD TEXT RENDERED UNDER THE HEADLINE on the image. Adds the concrete value behind the headline.
+      "slideTitle": string,    // 3-6 words. The BOLD HEADLINE TEXT RENDERED ON THE IMAGE. Must be a specific claim. Quote-worthy.
+      "slideBody": string,     // 6-12 words. The SUBHEAD RENDERED UNDER THE HEADLINE. Adds the concrete value behind the headline.
+      "slideExplainer": string, // 25-45 words. A short editorial PARAGRAPH rendered as body copy on the image, below the headline + subhead. Explains the WHY and HOW behind the headline — the bit a smart reader needs to actually act on the insight. Two or three sentences. Concrete, specific, no fluff. This is what makes the slide stand alone as informative without needing the caption.
       "chipLabels": [string],  // 2-4 chips. EVERY CHIP MUST BE A COMPLETE VALUE STATEMENT — a self-contained piece of information the reader can act on or remember without needing the caption. Each chip = a fact + its context. Length is flexible (1-7 words). The test: can someone screenshot just the chip and still understand what it means? Topic words alone fail this. Examples — HALF info (FAIL) → COMPLETE info (PASS):  "Networking" → "DM 3 alumni a week"  |  "Build your CV" → "Quantify every bullet"  |  "Interview Skills" → "Lead with the result, not the task"  |  "Tailored CVs" → "Match 7 keywords from the JD"  |  "Master AI tools" → "ChatGPT cuts research 70%"  |  "Remote-friendly" → "Roles in 40+ countries"  |  "Apply now" → "Apply by Aug 30, 2026"  |  "High paying" → "£45k average starting salary". The vocabulary doesn't matter; the COMPLETENESS does.
-      "imagePrompt": string,   // 140-200 word visual prompt. MUST instruct the image model to render the slideTitle and slideBody as actual readable typography on the image, plus the chipLabels as visible pill chips. The image model will render those text strings on the graphic.
+      "imagePrompt": string,   // 220-340 word visual prompt. MUST instruct the image model to render: (a) slideTitle as the masthead headline; (b) slideBody as the subhead under the headline; (c) slideExplainer as a 2-3 line BODY-COPY paragraph in a clean small sans (Inter/Söhne ~3-3.5% canvas height) placed in a clear text column — never overlapping the hero visual or chart; (d) chipLabels as visible pill chips. Always state exactly where the explainer paragraph sits in the layout (left column, bottom band, side bar, etc.) so it has its own dedicated zone.
       "graphicFormat": "photo-hero" | "3d-hero" | "infographic",
       "heroPhotoQuery": string | null,
       "photoSide": "left" | "right" | null,
@@ -264,12 +265,16 @@ IMAGEPROMPT — REQUIRED STRUCTURE (220-340 words per slide):
 1. **One-sentence concept**: what this slide IS at a glance ("an infographic showing 3 numbered tactics for cold-emailing recruiters", "a magazine-cover style portrait of a focused 22-year-old coder").
 2. **Composition + camera/render style**: state where things sit. Examples: "Vertical 1:1, full-bleed editorial poster.", "Top half: bold display headline. Bottom half: a clean photoreal 3D scene of a coffee cup, headphones and a notebook on a desk." For photos: "Shot on Canon EOS R5, 85mm f/1.4, shallow depth of field, editorial Kinfolk aesthetic." For 3D: "Octane render, ray-traced, soft directional key light." For illustration: "Flat editorial vector illustration, Notion / Linear marketing aesthetic, subtle grain texture."
 3. **Palette**: name dominant colour + accent in hex. Pull from brand palette but VARY the dominant slide-to-slide.
-4. **Typography (the words on the image)**: state the exact strings inside double quotes, the typeface vibe, weight, and accent treatment. Example: 'Render the headline "92% of CVs fail the 6-second scan" in a heavy modern display serif (think Saol / Tiempos), white, set tight, top-centre on 3 lines. Underneath, render "Here is the fix" in a small condensed italic sans, sunshine-yellow #fbbf24, set wide.' Use the actual slideTitle + slideBody strings.
-5. **Data / decoration on the image**: any pill chips, numbers, arrows, charts, icons that BELONG IN THE IMAGE. Spell out the text of each one. Example: 'Three small rounded pill chips along the bottom reading "30s read", "Tested by 200 grads", "Updated this month" in a clean sans, navy-on-cream.'
+4. **Typography (the words on the image)**: state the exact strings inside double quotes, the typeface vibe, weight, and accent treatment for EACH of three text tiers:
+   - HEADLINE (slideTitle, 3-6 words): masthead-size display.
+   - SUBHEAD (slideBody, 6-12 words): supporting dek under the headline.
+   - EXPLAINER PARAGRAPH (slideExplainer, 25-45 words): body copy in a clean small sans (Inter/Söhne ~3-3.5% canvas height, 1.4 line-height), 2-3 lines, ink or muted contrast, placed in its OWN dedicated column or band (e.g. left column, bottom strip, side panel) — never overlapping the hero visual or chart. ALWAYS state where the explainer sits in the layout.
+   Example: 'Render the headline "92% of CVs fail the 6-second scan" in a heavy modern display serif, navy, top-centre on 3 lines. Beneath: "Recruiters spend less than 8 seconds per CV" in a small condensed italic sans, sunshine-yellow #fbbf24. In a calm left column 35% of canvas width, render the explainer paragraph "Most CVs lose attention because the first six bullets are duties not outcomes..." in Inter Regular 16px equivalent, navy on cream, 1.4 line-height.'
+5. **Data / decoration on the image**: any pill chips, numbers, arrows, charts, icons that BELONG IN THE IMAGE. Spell out the text of each one.
 6. **Subject (if photo / 3D)**: be specific. Age, ethnicity (rotate), outfit, expression, posture, props. For 3D objects: lighting, perspective, materials.
 7. **Negative space + safe zone**: reserve a clean ~22% square in the TOP-LEFT corner for the brand logo overlay. No text or critical detail there. Say it explicitly.
 
-THE IMAGE MODEL MUST RENDER ALL TEXT IN THE PROMPT. Spell every word, give every word its style. Long text on a poster fails — keep the on-image text to ONE short headline (4-9 words), ONE optional subhead (4-12 words), and 0-3 short pill chips (1-4 words each).
+THE IMAGE MODEL MUST RENDER ALL TEXT IN THE PROMPT. Spell every word, give every word its style. On-image text per slide is exactly: ONE headline (3-6 words), ONE subhead (6-12 words), ONE explainer paragraph (25-45 words, 2-3 lines, smaller body sans), and 0-3 short pill chips (1-4 words). The explainer paragraph MUST have its own dedicated layout zone so it never overlaps the visual.
 
 CREATIVE-DIRECTION CHECKLIST (apply to every imagePrompt):
 - One specific concept, not "abstract energy".
@@ -448,6 +453,9 @@ function normaliseSlide(s: Record<string, unknown>, i: number): PostSlide {
     index: i,
     slideTitle: String(s.slideTitle ?? "").slice(0, 80),
     slideBody: String(s.slideBody ?? ""),
+    slideExplainer: typeof s.slideExplainer === "string" && s.slideExplainer.trim()
+      ? s.slideExplainer.trim().slice(0, 400)
+      : undefined,
     chipLabels: normaliseChipLabels(s.chipLabels),
     imagePrompt: String(s.imagePrompt ?? ""),
     graphicFormat,
