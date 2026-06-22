@@ -164,6 +164,9 @@ export interface PostPlan {
   id: string;
   opportunity: SeoOpportunity;
   format: "single" | "carousel";
+  /** Dominant visual lane assigned by the orchestrator at plan time. Persisted
+   *  so per-slide regenerates can stay inside the post's visual identity. */
+  assignedLane?: { name: string; brief: string };
   /** Post-level title (caption headline). */
   title: string;
   hook: string;

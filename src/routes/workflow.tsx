@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { runWeeklyPlan, replacePost } from "@/lib/agents/pipeline.server";
+import { rewriteSlidePrompt } from "@/lib/agents/writer-agent.server";
 import { runGraphicAgent } from "@/lib/agents/graphic-agent.server";
 // Force-bundle the inner-agent server handlers. pipeline.server.ts calls
 // these server-to-server; without an import from a route, the TanStack Start
@@ -143,11 +144,59 @@ function WorkflowPage() {
     // CTA + website footer shows on every single-post slide and on the LAST
     // (outro) slide of every carousel.
     const isOutro = slide.index === post.slides.length - 1;
+    // If a graphic already exists for this slide, this click is a REGENERATE
+    // — ask the writer to produce a fresh imagePrompt before calling the
+    // image model. Keeps copy, varies visual interpretation.
+    const isRegenerate = !!graphics[k];
+    let effectivePrompt = slide.imagePrompt;
+    if (isRegenerate) {
+      try {
+        const { imagePrompt: fresh } = await rewriteSlidePrompt({
+          data: {
+            brandId: plan?.brandId ?? selectedBrand.id,
+            format: post.format,
+            slideIndex: slide.index,
+            totalSlides: post.slides.length,
+            isOutro,
+            assignedLane: post.assignedLane,
+            opportunity: {
+              keyword: post.opportunity.keyword,
+              contentAngle: post.opportunity.contentAngle,
+              rationale: post.opportunity.rationale,
+            },
+            currentSlide: {
+              slideTitle: slide.slideTitle,
+              slideBody: slide.slideBody,
+              slideExplainer: slide.slideExplainer,
+              chipLabels: slide.chipLabels,
+              imagePrompt: slide.imagePrompt,
+            },
+          },
+        });
+        effectivePrompt = fresh;
+        // Patch the plan in memory + persist so the new prompt sticks even
+        // before the image finishes generating.
+        setPlan((prev) => {
+          if (!prev) return prev;
+          const nextPosts = prev.posts.map((p) =>
+            p.id === post.id
+              ? { ...p, slides: p.slides.map((s) => (s.index === slide.index ? { ...s, imagePrompt: fresh } : s)) }
+              : p,
+          );
+          const next: WeeklyPlan = { ...prev, posts: nextPosts };
+          void savePlan({ data: { plan: next } }).catch((e) => console.warn("savePlan after rewrite failed:", e));
+          return next;
+        });
+      } catch (rewriteErr) {
+        console.warn("rewriteSlidePrompt failed, falling back to existing prompt:", rewriteErr);
+        toast.warning("Couldn't draft a fresh prompt — regenerating with the existing one.");
+      }
+    }
     try {
       const g = await runGraphicAgent({
         data: {
           brandId: post.opportunity ? plan!.brandId : selectedBrand.id,
-          imagePrompt: slide.imagePrompt,
+          imagePrompt: effectivePrompt,
           title: slide.slideTitle,
           heroPhotoQuery: slide.heroPhotoQuery,
           photoSide: slide.photoSide,

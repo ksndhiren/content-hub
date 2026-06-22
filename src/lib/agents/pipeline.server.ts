@@ -130,11 +130,14 @@ export const runWeeklyPlan = createServerFn({ method: "POST" })
     // Writer runs are independent, run them in parallel with assigned formats.
     const tw = Date.now();
     const posts = await Promise.all(
-      opportunities.map((opp, i) =>
-        runWriterAgent({
+      opportunities.map(async (opp, i) => {
+        const post = await runWriterAgent({
           data: { brandId: brand.id, opportunity: opp, requestedFormat: formats[i], assignedLane: lanes[i] },
-        }),
-      ),
+        });
+        // Stamp the lane onto the post so per-slide regenerates can reuse it
+        // and stay inside the same visual identity.
+        return { ...post, assignedLane: lanes[i] };
+      }),
     );
     console.log(`[plan] ${brand.id}: writer (x${posts.length}) done in ${Date.now() - tw}ms. total: ${Date.now() - overall}ms`);
 

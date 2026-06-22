@@ -396,6 +396,99 @@ Write the full plan now.`;
     return cleanStringsDeep(post);
   });
 
+// ---------- per-slide imagePrompt rewriter ----------
+// Used by the workflow's Regenerate button so each click produces a NEW
+// visual interpretation, not a fresh roll of the same prompt. Keeps the
+// slide's copy (headline / subhead / explainer / chips) so the post still
+// tells the same story; only the visual art-direction changes.
+
+const RewriteSlideSchema = z.object({
+  brandId: z.string().min(1),
+  format: z.enum(["single", "carousel"]),
+  slideIndex: z.number().int().min(0),
+  totalSlides: z.number().int().min(1),
+  isOutro: z.boolean(),
+  assignedLane: z.object({ name: z.string(), brief: z.string() }).optional(),
+  opportunity: z.object({
+    keyword: z.string(),
+    contentAngle: z.string().optional(),
+    rationale: z.string().optional(),
+  }),
+  currentSlide: z.object({
+    slideTitle: z.string(),
+    slideBody: z.string(),
+    slideExplainer: z.string().optional(),
+    chipLabels: z.array(z.string()).optional(),
+    /** The previous imagePrompt — the model is asked to vary AWAY from this. */
+    imagePrompt: z.string(),
+  }),
+});
+
+export const rewriteSlidePrompt = createServerFn({ method: "POST" })
+  .inputValidator(RewriteSlideSchema)
+  .handler(async ({ data }): Promise<{ imagePrompt: string }> => {
+    const brand = initialBrands.find((b) => b.id === data.brandId);
+    if (!brand) throw new Error(`Brand not found: ${data.brandId}`);
+
+    const openai = getOpenAI();
+    const { openaiChatModel } = getServerConfig();
+    const year = new Date().getUTCFullYear();
+
+    const role = data.isOutro
+      ? "OUTRO (action-driving close)"
+      : data.slideIndex === 0
+      ? "COVER (scroll-stopper hook)"
+      : "BODY (one specific point of the story)";
+
+    const userMsg = `Year: ${year}. Brand: ${brand.name} (${brand.industry}). Audience: ${brand.audience}.
+Brand colours: ${(brand.colors ?? []).join(", ")}
+Brand visual style (BAKE INTO PROMPT):
+${brand.visualStyle ?? "Editorial museum-grade infographic. Mixed serif + sans typography. Photoreal 3D heroes. Callout leader lines. Brand palette dominant."}
+${data.assignedLane ? `\nASSIGNED VISUAL LANE: ${data.assignedLane.name}\n${data.assignedLane.brief}` : ""}
+
+Slide role: ${role}  (slide ${data.slideIndex + 1} of ${data.totalSlides}, format=${data.format})
+Topic: ${data.opportunity.keyword}${data.opportunity.contentAngle ? ` — ${data.opportunity.contentAngle}` : ""}
+
+THE COPY ON THIS SLIDE IS FIXED. Do not rewrite it. Build the new imagePrompt around these exact strings:
+  HEADLINE: "${data.currentSlide.slideTitle}"
+  SUBHEAD : "${data.currentSlide.slideBody}"
+  EXPLAINER: ${data.currentSlide.slideExplainer ? `"${data.currentSlide.slideExplainer}"` : "(none on this slide)"}
+  CHIPS   : ${(data.currentSlide.chipLabels ?? []).map((c) => `"${c}"`).join(", ") || "(none)"}
+
+YOUR JOB: Produce ONE fresh imagePrompt that gives this slide a NEW visual interpretation. Same role, same lane, same copy — but a deliberately DIFFERENT composition, camera/render angle, palette emphasis, and accent treatment. The user has clicked Regenerate because the previous take wasn't right; do not repeat its specific framing.
+
+PRIOR PROMPT (vary AWAY from this — do not echo its composition, camera, palette emphasis or accent placement):
+"""
+${data.currentSlide.imagePrompt.slice(0, 1500)}
+"""
+
+Output: a single 220-340 word imagePrompt string (no JSON, no preamble), structured as:
+1) One-sentence concept of the new slide
+2) Composition + camera/render style (state spatial zones — top third, left column, etc)
+3) Palette: name two hex colours from the brand palette
+4) Typography directions for the three text tiers (HEADLINE, SUBHEAD, EXPLAINER) using the exact strings above. Headline is the masthead-size display; explainer is a 25-45 word paragraph in clean small sans with its own dedicated text column or band, never overlapping the hero visual.
+5) Data / decoration: spell every visible chip / number / callout
+6) If subject is a person, vary ethnicity/styling/environment from common defaults
+7) State the 22% top-left logo safe zone explicitly. NO URL, NO "www.", NO ".com", NO buttons rendered on the canvas.
+
+Do NOT use em-dashes (U+2014) or en-dashes (U+2013). Output prose only.`;
+
+    const completion = await openai.chat.completions.create({
+      model: openaiChatModel,
+      temperature: 0.95,
+      messages: [
+        { role: "system", content: "You are the Content Writer Agent's per-slide visual rewriter. You produce ONE imagePrompt string for ONE slide, with deliberate variation from the prior prompt. Output prose only, no JSON." },
+        { role: "user", content: userMsg },
+      ],
+    });
+    const raw = (completion.choices[0]?.message?.content ?? "").trim();
+    const cleaned = cleanStringsDeep({ p: raw }).p;
+    if (cleaned.length < 60) {
+      throw new Error("Rewriter produced an empty or too-short imagePrompt; keeping the original.");
+    }
+    return { imagePrompt: cleaned };
+  });
+
 // ---------- helpers ----------
 
 function normaliseWriterOutput(
