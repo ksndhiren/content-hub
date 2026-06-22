@@ -25,6 +25,12 @@ const InputSchema = z.object({
   /** When true, force the model to render the brand CTA + website URL on the
    *  image. Set by the workflow page for outro slides and for single-slide posts. */
   showCta: z.boolean().optional(),
+  /** Explainer paragraph + chip labels — composited as crisp SVG text on top
+   *  of the AI image, because gpt-image-* mangles small body text and
+   *  multi-word pills. Optional; when missing the overlay is skipped. */
+  slideExplainer: z.string().optional(),
+  chipLabels: z.array(z.string()).optional(),
+  cornerTone: z.enum(["light", "dark"]).optional(),
 }).passthrough();
 
 interface LogoInfo { dataUrl: string; aspectRatio: number; mime: string }
@@ -39,7 +45,22 @@ export const runGraphicAgent = createServerFn({ method: "POST" })
     const cfg = getServerConfig();
 
     const safeZonePreamble = `STRICT CANVAS RULES (read first, apply throughout):
-The output is a square 1024x1024 graphic shown with NO bleed on Instagram and LinkedIn. ALL headline text, subhead text, pill chips, faces, hands, and critical subject details MUST sit fully inside the central 84% of the frame — i.e. keep an 8% empty padding ring around every edge. Letters that touch any edge will be cropped and ruin the post. Also reserve a clean empty square in the TOP-LEFT corner roughly 22% of the canvas wide and tall — no text, no faces, no busy detail there, it's where a brand logo gets stamped afterwards. Treat both rules as non-negotiable.
+The output is a square 1024x1024 graphic shown with NO bleed on Instagram and LinkedIn. Critical subject details MUST sit inside the central 84% of the frame (8% padding ring on every edge). Also reserve a clean empty square in the TOP-LEFT corner ~22% of the canvas — no text, no faces, no busy detail there, that's where the brand logo gets stamped afterwards.
+
+TEXT RENDERING SPLIT (very important):
+- You (the image model) render ONLY two text elements: the HEADLINE and the SUBHEAD. Both are short. Render them clearly and accurately, large and readable, at the top of the canvas.
+- DO NOT render any body paragraph, explainer text, pill chips, callout labels, or supporting copy. Code composites those as crisp SVG text after you finish — your text rendering for small body text is unreliable, so leave it out entirely.
+- Reserve the BOTTOM ~26% of the canvas as a quiet, visually calm zone (subtle background colour or texture only) for the code-composed body text overlay. NO graphics, NO type, NO faces in that bottom strip.
+- Reserve a thin BAND just above the bottom strip (~6% canvas height) for code-composed pill chips. Keep it visually quiet too.
+
+Reading the rules above as one canvas plan:
+  Top 8%: empty padding
+  Top-left 22% square: empty for logo
+  Upper 35% of remaining canvas: HEADLINE + SUBHEAD (you render)
+  Mid 30%: HERO VISUAL (you render — chart, 3D scene, portrait, etc)
+  Lower 6% above bottom: chip strip (LEAVE EMPTY — code fills)
+  Bottom 26%: body-text band (LEAVE EMPTY or subtle wash — code fills)
+  Bottom 8%: padding (no critical content)
 
 BRAND TYPOGRAPHY (apply to every slide):
 This is editorial-magazine typography, mixed serif + sans. Pick whichever fits the slide's lane:
@@ -90,11 +111,17 @@ Aim for the typographic vibe of Visual Capitalist, Information is Beautiful, Pit
     const logoH = LOGO_W / aspect;
     const initialPlacement = placementForPosition("top-left", LOGO_W, logoH, MARGIN);
 
-    // URL is now a client-controlled overlay (like the logo) — server no
-    // longer stamps it into the SVG. We pass brandWebsite + defaultShowUrl
-    // through the output so the client can render and toggle it.
-    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement, cornerTone);
-    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement, cornerTone);
+    // URL is client-controlled (overlaid by EditableLogoCanvas). Explainer +
+    // chips ARE baked into baseSvg / composedSvg because the image model
+    // can't render small body text or multi-word chips reliably — code does
+    // that here as real SVG text.
+    const textOverlay = {
+      explainer: (data.slideExplainer ?? "").trim() || undefined,
+      chips: (data.chipLabels ?? []).map((c) => c.trim()).filter(Boolean),
+      cornerTone,
+    };
+    const composedSvg = composeMinimalSvg(imageBase64, logos[recommendedVariant], initialPlacement, cornerTone, textOverlay);
+    const baseSvg = composeMinimalSvg(imageBase64, undefined, initialPlacement, cornerTone, textOverlay);
 
     const positionScores: LogoPositionScore[] = POSITIONS.map((p) => ({
       position: p,
@@ -152,14 +179,25 @@ async function classifyCornerTone(
   }
 }
 
-function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, placement: LogoPlacement, cornerTone: "light" | "dark" = "light"): string {
+interface TextOverlay {
+  explainer?: string;
+  chips: string[];
+  cornerTone: "light" | "dark";
+}
+
+function composeMinimalSvg(
+  imageBase64: string,
+  logo: LogoInfo | undefined,
+  placement: LogoPlacement,
+  cornerTone: "light" | "dark" = "light",
+  textOverlay?: TextOverlay,
+): string {
   const S = 1024;
   const href = `data:image/png;base64,${imageBase64}`;
-  // The composed SVG no longer bakes the logo's white/invert filter — the
-  // client toggle in EditableLogoCanvas drives that so the user can switch
-  // light/dark variants in real time. Server still draws the default-tone
-  // logo so the "raw" composed SVG (used by the carousel zip export) is
-  // self-sufficient when downloaded without client interaction.
+
+  // Logo overlay (top-left). White/invert toggle handled by EditableLogoCanvas
+  // client-side; server-side default is light-corner mode so the standalone
+  // composed SVG (used by carousel zip download) renders self-sufficiently.
   let logoNode = "";
   if (logo) {
     const w = placement.width * S;
@@ -176,9 +214,117 @@ function composeMinimalSvg(imageBase64: string, logo: LogoInfo | undefined, plac
   <rect x="${x - padX}" y="${y - padY}" width="${w + padX * 2}" height="${h + padY * 2}" rx="${rx}" fill="${plateColor}" fill-opacity="${plateOpacity}"/>
   <image href="${logo.dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"${invertOnLight}/>`;
   }
+
+  // Body-text overlay: chips strip + explainer paragraph rendered as real
+  // SVG text (image models can't do small body text reliably).
+  const overlayNode = renderTextOverlay(S, textOverlay);
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">
-  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${logoNode}
+  <image href="${href}" x="0" y="0" width="${S}" height="${S}"/>${overlayNode}${logoNode}
 </svg>`;
+}
+
+/** Renders the chip strip + explainer paragraph as crisp SVG text on the
+ *  reserved bottom band (~26% canvas) + chip strip (~6%). Background of the
+ *  band is a soft brand-coloured pane so the text stays legible regardless
+ *  of what the AI rendered above. */
+function renderTextOverlay(S: number, overlay?: TextOverlay): string {
+  if (!overlay) return "";
+  const hasChips = overlay.chips.length > 0;
+  const hasExplainer = !!overlay.explainer;
+  if (!hasChips && !hasExplainer) return "";
+
+  // Layout zones, in canvas pixels:
+  const bandH = hasExplainer ? Math.round(S * 0.22) : 0;   // explainer band
+  const chipStripH = hasChips ? Math.round(S * 0.07) : 0;  // chip pills strip
+  const padBottom = Math.round(S * 0.04);                  // bottom padding
+  const bandTopY = S - padBottom - bandH;
+  const chipStripY = bandTopY - chipStripH - Math.round(S * 0.012);
+
+  const dark = overlay.cornerTone === "dark";
+  const bandFill = dark ? "#0b1f4a" : "#faf6ee";
+  const bandText = dark ? "#faf6ee" : "#0b1f4a";
+  const chipFill = dark ? "#faf6ee" : "#0b1f4a";
+  const chipText = dark ? "#0b1f4a" : "#faf6ee";
+
+  let out = "";
+
+  // Explainer band: a soft-bordered rounded panel + wrapped paragraph.
+  if (hasExplainer) {
+    const padX = Math.round(S * 0.07);
+    const padY = Math.round(S * 0.04);
+    const margin = Math.round(S * 0.06);
+    const x = margin;
+    const y = bandTopY;
+    const w = S - margin * 2;
+    const h = bandH;
+    const rx = Math.round(S * 0.02);
+    out += `
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${bandFill}" fill-opacity="0.94"/>`;
+
+    const fontSize = Math.round(S * 0.028);
+    const lineHeight = Math.round(fontSize * 1.35);
+    const maxLineWidth = w - padX * 2;
+    const lines = wrapText(overlay.explainer!, maxLineWidth, fontSize);
+    const totalTextH = lines.length * lineHeight;
+    const startY = y + (h - totalTextH) / 2 + fontSize;
+    for (let i = 0; i < lines.length; i++) {
+      const ly = startY + i * lineHeight;
+      out += `
+  <text x="${x + padX}" y="${ly}" fill="${bandText}" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="${fontSize}" font-weight="500" letter-spacing="0.01em">${escapeXml(lines[i])}</text>`;
+    }
+  }
+
+  // Chip strip: small rounded pills laid out left-to-right, wrapping if needed.
+  if (hasChips) {
+    const fontSize = Math.round(S * 0.022);
+    const padX = Math.round(S * 0.018);
+    const padY = Math.round(S * 0.011);
+    const gap = Math.round(S * 0.012);
+    const margin = Math.round(S * 0.06);
+    const stripW = S - margin * 2;
+    // Pre-measure widths to centre the chip row.
+    const charW = fontSize * 0.55;
+    const widths = overlay.chips.map((c) => Math.round(c.length * charW) + padX * 2);
+    const totalW = widths.reduce((a, b) => a + b, 0) + gap * (overlay.chips.length - 1);
+    let cx = margin + Math.max(0, (stripW - totalW) / 2);
+    const cy = chipStripY;
+    const chipH = fontSize + padY * 2;
+    for (let i = 0; i < overlay.chips.length; i++) {
+      const cw = widths[i];
+      out += `
+  <rect x="${cx}" y="${cy}" width="${cw}" height="${chipH}" rx="${chipH / 2}" fill="${chipFill}" fill-opacity="0.92"/>
+  <text x="${cx + cw / 2}" y="${cy + chipH / 2 + fontSize / 3}" text-anchor="middle" fill="${chipText}" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="${fontSize}" font-weight="600" letter-spacing="0.01em">${escapeXml(overlay.chips[i])}</text>`;
+      cx += cw + gap;
+    }
+  }
+
+  return out;
+}
+
+/** Greedy line-wrap based on a rough character-width estimate. Good enough
+ *  for body copy at known font size and known canvas width. */
+function wrapText(text: string, maxPx: number, fontSize: number): string[] {
+  const charW = fontSize * 0.5;
+  const maxChars = Math.max(20, Math.floor(maxPx / charW));
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const candidate = cur ? `${cur} ${w}` : w;
+    if (candidate.length > maxChars && cur) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = candidate;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.slice(0, 5); // hard cap at 5 lines
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c] as string));
 }
 
 /** Fetch a remote logo URL and return it as a data URL so it embeds in the

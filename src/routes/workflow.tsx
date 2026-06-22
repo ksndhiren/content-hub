@@ -203,6 +203,7 @@ function WorkflowPage() {
           brandedTools: slide.brandedTools,
           headline: slide.slideTitle,
           subhead: slide.slideBody,
+          slideExplainer: slide.slideExplainer,
           chipLabels: slide.chipLabels,
           graphicFormat: slide.graphicFormat,
           showCta: isOutro,

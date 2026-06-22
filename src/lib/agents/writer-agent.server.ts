@@ -47,7 +47,7 @@ Return ONLY valid JSON matching this schema:
       "slideBody": string,     // 6-12 words. The SUBHEAD RENDERED UNDER THE HEADLINE. Adds the concrete value behind the headline.
       "slideExplainer": string, // 25-45 words. A short editorial PARAGRAPH rendered as body copy on the image, below the headline + subhead. Explains the WHY and HOW behind the headline — the bit a smart reader needs to actually act on the insight. Two or three sentences. Concrete, specific, no fluff. This is what makes the slide stand alone as informative without needing the caption.
       "chipLabels": [string],  // 2-4 chips. EVERY CHIP MUST BE A COMPLETE VALUE STATEMENT — a self-contained piece of information the reader can act on or remember without needing the caption. Each chip = a fact + its context. Length is flexible (1-7 words). The test: can someone screenshot just the chip and still understand what it means? Topic words alone fail this. Examples — HALF info (FAIL) → COMPLETE info (PASS):  "Networking" → "DM 3 alumni a week"  |  "Build your CV" → "Quantify every bullet"  |  "Interview Skills" → "Lead with the result, not the task"  |  "Tailored CVs" → "Match 7 keywords from the JD"  |  "Master AI tools" → "ChatGPT cuts research 70%"  |  "Remote-friendly" → "Roles in 40+ countries"  |  "Apply now" → "Apply by Aug 30, 2026"  |  "High paying" → "£45k average starting salary". The vocabulary doesn't matter; the COMPLETENESS does.
-      "imagePrompt": string,   // 220-340 word visual prompt. MUST instruct the image model to render: (a) slideTitle as the masthead headline; (b) slideBody as the subhead under the headline; (c) slideExplainer as a 2-3 line BODY-COPY paragraph in a clean small sans (Inter/Söhne ~3-3.5% canvas height) placed in a clear text column — never overlapping the hero visual or chart; (d) chipLabels as visible pill chips. Always state exactly where the explainer paragraph sits in the layout (left column, bottom band, side bar, etc.) so it has its own dedicated zone.
+      "imagePrompt": string,   // 220-340 word visual prompt. MUST tell the image model to render ONLY (a) slideTitle as the masthead headline and (b) slideBody as the subhead under the headline. DO NOT instruct the model to render the explainer paragraph or the pill chips — those are composited by CODE as crisp SVG text after the image is generated. Tell the model to RESERVE the bottom ~26% of the canvas plus a thin band above it as quiet zones (subtle wash or solid colour, no text, no faces, no graphics) so the code overlay has clean space to land. Bake the hero visual, headline + subhead in the upper two-thirds.
       "graphicFormat": "photo-hero" | "3d-hero" | "infographic",
       "heroPhotoQuery": string | null,
       "photoSide": "left" | "right" | null,
@@ -267,16 +267,16 @@ IMAGEPROMPT — REQUIRED STRUCTURE (220-340 words per slide):
 1. **One-sentence concept**: what this slide IS at a glance ("an infographic showing 3 numbered tactics for cold-emailing recruiters", "a magazine-cover style portrait of a focused 22-year-old coder").
 2. **Composition + camera/render style**: state where things sit. Examples: "Vertical 1:1, full-bleed editorial poster.", "Top half: bold display headline. Bottom half: a clean photoreal 3D scene of a coffee cup, headphones and a notebook on a desk." For photos: "Shot on Canon EOS R5, 85mm f/1.4, shallow depth of field, editorial Kinfolk aesthetic." For 3D: "Octane render, ray-traced, soft directional key light." For illustration: "Flat editorial vector illustration, Notion / Linear marketing aesthetic, subtle grain texture."
 3. **Palette**: name dominant colour + accent in hex. Pull from brand palette but VARY the dominant slide-to-slide.
-4. **Typography (the words on the image)**: state the exact strings inside double quotes, the typeface vibe, weight, and accent treatment for EACH of three text tiers:
-   - HEADLINE (slideTitle, 3-6 words): masthead-size display.
+4. **Typography (the words on the image)**: only TWO text tiers are rendered by the image model. State the exact strings inside double quotes and the typeface vibe for each:
+   - HEADLINE (slideTitle, 3-6 words): masthead-size display, upper portion of the canvas.
    - SUBHEAD (slideBody, 6-12 words): supporting dek under the headline.
-   - EXPLAINER PARAGRAPH (slideExplainer, 25-45 words): body copy in a clean small sans (Inter/Söhne ~3-3.5% canvas height, 1.4 line-height), 2-3 lines, ink or muted contrast, placed in its OWN dedicated column or band (e.g. left column, bottom strip, side panel) — never overlapping the hero visual or chart. ALWAYS state where the explainer sits in the layout.
-   Example: 'Render the headline "92% of CVs fail the 6-second scan" in a heavy modern display serif, navy, top-centre on 3 lines. Beneath: "Recruiters spend less than 8 seconds per CV" in a small condensed italic sans, sunshine-yellow #fbbf24. In a calm left column 35% of canvas width, render the explainer paragraph "Most CVs lose attention because the first six bullets are duties not outcomes..." in Inter Regular 16px equivalent, navy on cream, 1.4 line-height.'
-5. **Data / decoration on the image**: any pill chips, numbers, arrows, charts, icons that BELONG IN THE IMAGE. Spell out the text of each one.
+   The slideExplainer and chip labels are NOT rendered by the image model — code composites them as real SVG text after generation. Just instruct the model to leave the bottom 26% of the canvas + a 6% chip strip above it as quiet zones (subtle wash or flat colour, no graphics, no text) so the code overlay has clean space to land.
+   Example: 'Render the headline "92% of CVs fail the 6-second scan" in a heavy modern display serif, navy, top-centre on 3 lines. Beneath: "Recruiters spend less than 8 seconds per CV" in a small condensed italic sans, sunshine-yellow #fbbf24. Bottom 26% of the canvas is a flat cream band, completely empty — code adds the explainer paragraph here. Just above it, a thin 6% band, also empty — code adds chip pills here.'
+5. **Data / decoration on the image**: chart elements, callout numbers, icons, arrows, accent shapes etc that are part of the visual itself. Do NOT instruct the model to render any pill chips or supporting body text — code overlays those.
 6. **Subject (if photo / 3D)**: be specific. Age, ethnicity (rotate), outfit, expression, posture, props. For 3D objects: lighting, perspective, materials.
 7. **Negative space + safe zone**: reserve a clean ~22% square in the TOP-LEFT corner for the brand logo overlay. No text or critical detail there. Say it explicitly.
 
-THE IMAGE MODEL MUST RENDER ALL TEXT IN THE PROMPT. Spell every word, give every word its style. On-image text per slide is exactly: ONE headline (3-6 words), ONE subhead (6-12 words), ONE explainer paragraph (25-45 words, 2-3 lines, smaller body sans), and 0-3 short pill chips (1-4 words). The explainer paragraph MUST have its own dedicated layout zone so it never overlaps the visual.
+ON-IMAGE TEXT THE MODEL RENDERS: exactly the headline (3-6 words) and the subhead (6-12 words). NOTHING ELSE. The explainer paragraph and chip labels are rendered as crisp SVG text by CODE after the image is generated, because image models mangle small body text. Always instruct the model to leave the bottom band + chip strip empty.
 
 CREATIVE-DIRECTION CHECKLIST (apply to every imagePrompt):
 - One specific concept, not "abstract energy".
@@ -525,10 +525,10 @@ Output: a single 220-340 word imagePrompt string (no JSON, no preamble), structu
 1) One-sentence concept of the new slide
 2) Composition + camera/render style (state spatial zones — top third, left column, etc)
 3) Palette: name two hex colours from the brand palette
-4) Typography directions for the three text tiers (HEADLINE, SUBHEAD, EXPLAINER) using the exact strings above. Headline is the masthead-size display; explainer is a 25-45 word paragraph in clean small sans with its own dedicated text column or band, never overlapping the hero visual.
-5) Data / decoration: spell every visible chip / number / callout
+4) Typography directions for ONLY two text tiers using the exact strings above: HEADLINE (masthead display) and SUBHEAD (dek). Do NOT instruct the model to render the explainer paragraph or chip labels — code composites those as crisp SVG text afterwards. Tell the model to leave the bottom 26% of the canvas plus a 6% chip strip above it as quiet empty zones (subtle wash, flat colour) so the code overlay lands cleanly.
+5) Data / decoration on the image: chart elements, callout numbers, accent shapes — but no pill chips and no body paragraph text.
 6) If subject is a person, vary ethnicity/styling/environment from common defaults
-7) State the 22% top-left logo safe zone explicitly. NO URL, NO "www.", NO ".com", NO buttons rendered on the canvas.
+7) State the 22% top-left logo safe zone explicitly. NO URL, NO "www.", NO ".com", NO buttons, NO chips, NO paragraph text rendered on the canvas.
 
 Do NOT use em-dashes (U+2014) or en-dashes (U+2013). Output prose only.`;
 
