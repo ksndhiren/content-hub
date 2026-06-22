@@ -144,7 +144,7 @@ PHOTO STRATEGY (READ CAREFULLY):
 HARD QUOTA: across a 5-slide carousel, USE AT LEAST 3 DIFFERENT layoutVariants from {hero-arch, stat-cards, bar-rows, category-list, split-stats}.
 
 CONNECTING HOOK/BODY TO SLIDES (CRITICAL):
-- For SINGLE posts: slide 0's slideTitle = a punchier rewrite of the hook. slideBody distills the strongest specific point from body. chipLabels pull 2-4 concrete data points (stats, names, tools, numbers) from body. This slide also doubles as the outro — keep it CTA-friendly.
+- For SINGLE posts: slide 0 is the entire post. slideTitle is a punchier rewrite of the hook. slideBody distills the strongest specific point from body. slideExplainer carries the substance + a clear nudge to the reader (treat it as a mini-outro). chipLabels pull 2-4 concrete data points (stats, names, tools, numbers) from body. Because singles double as their own outro, apply the OUTRO SLIDE RULES below — the action-oriented headline verb, the promise, the trust chips. A single post that doesn't drive an action is a wasted slot.
 - For CAROUSEL posts: structure is COVER → BODY → OUTRO.
   • Slide 0 (COVER): carries the hook headline. Photo-hero. Scroll-stopper.
   • Slides 1..N-2 (BODY): each takes ONE specific point from body and turns it into its own headline + subhead + chips. The whole body should be visible across these combined.
@@ -152,13 +152,15 @@ CONNECTING HOOK/BODY TO SLIDES (CRITICAL):
 
 The hook and body are NOT discardable filler. If your slides don't contain the substance of body, you have failed. The user reviewing this should be able to compose the body from reading just the slides.
 
-OUTRO SLIDE RULES (last slide of every carousel):
-The outro is the action moment. Its job is to recap + nudge the reader to engage. Code automatically composites a CTA + website footer on this slide.
-- slideTitle: a punchy, action-oriented recap headline (3-6 words). Examples: "Start your journey", "Ready to apply?", "Your move", "Stand out today", "Don't just save it, share it".
-- slideBody: a 1-line action prompt (6-12 words). Examples: "Apply at internwise.co.uk for live internships matched to your skills", "Save this carousel and tag a friend who needs it".
-- chipLabels: 2-3 short trust signals or value props (e.g. "Free to apply", "200+ live roles", "60-second sign-up"). Avoid repeating chip content from earlier slides.
-- graphicFormat: photo-hero by default — a warm, optimistic, forward-looking image (subject smiling, looking off into bright light, sunrise mood) OR a clean 3d-hero with a "doorway"/"arrow"/"open laptop" CTA-mood object.
-- The outro must feel like a natural close, not a duplicate of the cover.
+OUTRO SLIDE RULES (last slide of every carousel — also applies to single posts which act as their own outro):
+The outro is the ACTION MOMENT. Its job is to make the reader actually do the thing. The website URL is added by code as an overlay; the on-image copy must do the emotional + functional work to earn the click. A weak outro wastes the entire carousel.
+
+- slideTitle (3-6 words): DIRECT, action-oriented imperative. Use a verb, not a vibe. Strong: "Apply in 60 seconds", "Land your first internship", "Start your search today", "Get matched this week". Weak (DO NOT DO): "Your journey", "The next step", "Stand out", "Ready?". Avoid vague optimism — give the reader a SPECIFIC next move.
+- slideBody (6-12 words): the PROMISE — what the reader gets if they act. Strong: "Free signup, real employers, 200+ live UK internships waiting.", "We match you to roles in your field within a week.". Tie back to the topic of the carousel so it feels earned, not bolted on.
+- slideExplainer (25-45 words): a tight 2-3 sentence sales paragraph that closes the loop. Recap the ONE biggest insight from the carousel, name the friction the reader is feeling, then point at the action that removes it. Concrete numbers, real proof points, no fluff. Example: "Most graduates lose six months guessing which roles fit them. Internwise matches your skills, sector and location to live UK internships in under a minute — free to apply, no agencies, no spam. Your next role is already in there."
+- chipLabels (2-3 items): hard trust signals that LOWER the activation cost. Strong: "Free to apply", "60-second signup", "200+ live UK roles", "No agency fees". Each must be a complete fact, not a vibe. Never repeat chip content from earlier slides.
+- graphicFormat: photo-hero by default (warm, optimistic, forward-looking subject) or a clean 3d-hero with a "doorway / open laptop / hand reaching for handshake" CTA-mood object.
+- Visually distinct from the cover. The cover sets up tension; the outro releases it.
 
 FORMAT (single vs carousel):
 - "single" → ONE slide. ONLY use for: a single shock stat or a single hot take. NEVER use single for "how to X" / "5 ways to Y" / "balance X and Y" / "master Z" — those are how-to playbooks and MUST be carousels with each tactic visible on its own slide. A single slide cannot teach a method; it can only state one fact.
