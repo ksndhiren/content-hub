@@ -23,6 +23,7 @@ interface UrlState {
   plate: boolean;
 }
 interface LogoState {
+  show: boolean;
   variant: LogoVariant;
   plate: boolean;
 }
@@ -36,7 +37,7 @@ interface LogoState {
 export function EditableLogoCanvas({ data }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<LogoPlacement>(data.initialPlacement);
-  const [logo, setLogo] = useState<LogoState>({ variant: data.recommendedVariant, plate: true });
+  const [logo, setLogo] = useState<LogoState>({ show: true, variant: data.recommendedVariant, plate: true });
   const dragTarget = useRef<null | "logo" | "url">(null);
   const dragInfo = useRef<null | { sx: number; sy: number; px: number; py: number; cw: number; ch: number }>(null);
 
@@ -64,7 +65,7 @@ export function EditableLogoCanvas({ data }: Props) {
 
   useEffect(() => {
     setPlacement(data.initialPlacement);
-    setLogo({ variant: data.recommendedVariant, plate: true });
+    setLogo({ show: true, variant: data.recommendedVariant, plate: true });
     setUrl(initialUrl);
   }, [data, initialUrl]);
 
@@ -145,7 +146,7 @@ export function EditableLogoCanvas({ data }: Props) {
 
   const reset = () => {
     setPlacement(data.initialPlacement);
-    setLogo({ variant: data.recommendedVariant, plate: true });
+    setLogo({ show: true, variant: data.recommendedVariant, plate: true });
     setUrl(initialUrl);
   };
 
@@ -166,7 +167,7 @@ export function EditableLogoCanvas({ data }: Props) {
     const base = await loadImage(baseSvgDataUrl);
     ctx.drawImage(base, 0, 0, TARGET, TARGET);
 
-    if (activeLogo) {
+    if (activeLogo && logo.show) {
       const lw = placement.width * TARGET;
       const lh = lw / aspect;
       const lx = placement.x * TARGET;
@@ -222,7 +223,7 @@ export function EditableLogoCanvas({ data }: Props) {
         />
 
         {/* Logo: plate layer (drag target sits here too so the plate is grabbable) */}
-        {activeLogo && logo.plate ? (
+        {activeLogo && logo.show && logo.plate ? (
           <div
             onPointerDown={onPointerDown("logo")}
             onPointerMove={onPointerMove}
@@ -241,7 +242,7 @@ export function EditableLogoCanvas({ data }: Props) {
         ) : null}
 
         {/* Logo image — separate layer for clean sizing + invert filter */}
-        {activeLogo ? (
+        {activeLogo && logo.show ? (
           <div
             onPointerDown={onPointerDown("logo")}
             onPointerMove={onPointerMove}
@@ -306,39 +307,47 @@ export function EditableLogoCanvas({ data }: Props) {
       <div className="rounded-md border border-border p-3 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium">Logo</span>
-          {availableVariants.length > 1 ? (
-            <div className="inline-flex rounded-md border border-border overflow-hidden">
-              {availableVariants.map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setLogo((l) => ({ ...l, variant: v }))}
-                  className={cn(
-                    "text-xs px-3 py-1 capitalize transition-colors",
-                    logo.variant === v ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {v}{v === data.recommendedVariant ? " ★" : ""}
-                </button>
-              ))}
+          <Switch checked={logo.show} onCheckedChange={(v) => setLogo((l) => ({ ...l, show: v }))} />
+        </div>
+        {logo.show ? (
+          <>
+            {availableVariants.length > 1 ? (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Variant</span>
+                <div className="inline-flex rounded-md border border-border overflow-hidden">
+                  {availableVariants.map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setLogo((l) => ({ ...l, variant: v }))}
+                      className={cn(
+                        "text-xs px-3 py-1 capitalize transition-colors",
+                        logo.variant === v ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {v}{v === data.recommendedVariant ? " ★" : ""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground w-12 shrink-0">Size</span>
+              <Slider
+                value={[Math.round(placement.width * 100)]}
+                min={8}
+                max={45}
+                step={1}
+                onValueChange={onLogoSizeChange}
+                className="flex-1"
+              />
+              <span className="text-xs font-mono tabular-nums w-10 text-right">{Math.round(placement.width * 100)}%</span>
             </div>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground w-12 shrink-0">Size</span>
-          <Slider
-            value={[Math.round(placement.width * 100)]}
-            min={8}
-            max={45}
-            step={1}
-            onValueChange={onLogoSizeChange}
-            className="flex-1"
-          />
-          <span className="text-xs font-mono tabular-nums w-10 text-right">{Math.round(placement.width * 100)}%</span>
-        </div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Background plate</span>
-          <Switch checked={logo.plate} onCheckedChange={(v) => setLogo((l) => ({ ...l, plate: v }))} />
-        </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Background plate</span>
+              <Switch checked={logo.plate} onCheckedChange={(v) => setLogo((l) => ({ ...l, plate: v }))} />
+            </div>
+          </>
+        ) : null}
       </div>
 
       {/* URL CONTROLS — always shown; legacy graphics show a regenerate hint */}
