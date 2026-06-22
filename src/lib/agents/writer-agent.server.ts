@@ -43,11 +43,11 @@ Return ONLY valid JSON matching this schema:
   "graphicFormat": "photo-hero" | "3d-hero" | "infographic",
   "slides": [
     {
-      "slideTitle": string,    // 3-6 words. The BOLD HEADLINE TEXT RENDERED ON THE IMAGE. Must be a specific claim. Quote-worthy.
-      "slideBody": string,     // 6-12 words. The SUBHEAD RENDERED UNDER THE HEADLINE. Adds the concrete value behind the headline.
-      "slideExplainer": string, // 25-45 words. A short editorial PARAGRAPH rendered as body copy on the image, below the headline + subhead. Explains the WHY and HOW behind the headline — the bit a smart reader needs to actually act on the insight. Two or three sentences. Concrete, specific, no fluff. This is what makes the slide stand alone as informative without needing the caption.
+      "slideTitle": string,    // 3-6 words. The BIG BOLD HEADLINE RENDERED ON THE IMAGE. Specific claim, quote-worthy. The image model will set 1-2 key words inside a coloured highlight block.
+      "slideBody": string,     // 8-18 words. The SUPPORTING LINE rendered below the headline at a slightly smaller scale. Adds the concrete value behind the headline. Keep it ONE sentence so it fits one or two lines on the image.
+      "slideExplainer": string, // OPTIONAL second supporting line, 0-15 words. Use only when the slide really needs a second beat (e.g. a punchline, follow-up question, or framing line like "Should monthly paychecks stay or go?"). Leave empty otherwise. The image model renders it large enough to read on a phone.
       "chipLabels": [string],  // 2-4 chips. EVERY CHIP MUST BE A COMPLETE VALUE STATEMENT — a self-contained piece of information the reader can act on or remember without needing the caption. Each chip = a fact + its context. Length is flexible (1-7 words). The test: can someone screenshot just the chip and still understand what it means? Topic words alone fail this. Examples — HALF info (FAIL) → COMPLETE info (PASS):  "Networking" → "DM 3 alumni a week"  |  "Build your CV" → "Quantify every bullet"  |  "Interview Skills" → "Lead with the result, not the task"  |  "Tailored CVs" → "Match 7 keywords from the JD"  |  "Master AI tools" → "ChatGPT cuts research 70%"  |  "Remote-friendly" → "Roles in 40+ countries"  |  "Apply now" → "Apply by Aug 30, 2026"  |  "High paying" → "£45k average starting salary". The vocabulary doesn't matter; the COMPLETENESS does.
-      "imagePrompt": string,   // 220-340 word visual prompt. MUST tell the image model to render ONLY (a) slideTitle as the masthead headline and (b) slideBody as the subhead under the headline. DO NOT instruct the model to render the explainer paragraph or the pill chips — those are composited by CODE as crisp SVG text after the image is generated. Tell the model to RESERVE the bottom ~26% of the canvas plus a thin band above it as quiet zones (subtle wash or solid colour, no text, no faces, no graphics) so the code overlay has clean space to land. Bake the hero visual, headline + subhead in the upper two-thirds.
+      "imagePrompt": string,   // 220-340 word visual prompt. The image model renders the ENTIRE composition itself — visual + all on-canvas text. Tell it to render the slideTitle as the BIG BOLD HEADLINE with 1-2 key words wrapped in a coloured highlight rectangle (yellow #FFD43B, coral #ef4444, or cream #faf6ee), the slideBody as the SUPPORTING LINE below in a slightly smaller weight, and the slideExplainer (if non-empty) as a punchy second line. All text rendered LARGE — no small body text, no pill chips, no source lines, no callout labels. Spell every word verbatim inside double-quotes so the model copies them exactly.
       "graphicFormat": "photo-hero" | "3d-hero" | "infographic",
       "heroPhotoQuery": string | null,
       "photoSide": "left" | "right" | null,
@@ -267,16 +267,17 @@ IMAGEPROMPT — REQUIRED STRUCTURE (220-340 words per slide):
 1. **One-sentence concept**: what this slide IS at a glance ("an infographic showing 3 numbered tactics for cold-emailing recruiters", "a magazine-cover style portrait of a focused 22-year-old coder").
 2. **Composition + camera/render style**: state where things sit. Examples: "Vertical 1:1, full-bleed editorial poster.", "Top half: bold display headline. Bottom half: a clean photoreal 3D scene of a coffee cup, headphones and a notebook on a desk." For photos: "Shot on Canon EOS R5, 85mm f/1.4, shallow depth of field, editorial Kinfolk aesthetic." For 3D: "Octane render, ray-traced, soft directional key light." For illustration: "Flat editorial vector illustration, Notion / Linear marketing aesthetic, subtle grain texture."
 3. **Palette**: name dominant colour + accent in hex. Pull from brand palette but VARY the dominant slide-to-slide.
-4. **Typography (the words on the image)**: only TWO text tiers are rendered by the image model. State the exact strings inside double quotes and the typeface vibe for each:
-   - HEADLINE (slideTitle, 3-6 words): masthead-size display, upper portion of the canvas.
-   - SUBHEAD (slideBody, 6-12 words): supporting dek under the headline.
-   The slideExplainer and chip labels are NOT rendered by the image model — code composites them as real SVG text after generation. Just instruct the model to leave the bottom 26% of the canvas + a 6% chip strip above it as quiet zones (subtle wash or flat colour, no graphics, no text) so the code overlay has clean space to land.
-   Example: 'Render the headline "92% of CVs fail the 6-second scan" in a heavy modern display serif, navy, top-centre on 3 lines. Beneath: "Recruiters spend less than 8 seconds per CV" in a small condensed italic sans, sunshine-yellow #fbbf24. Bottom 26% of the canvas is a flat cream band, completely empty — code adds the explainer paragraph here. Just above it, a thin 6% band, also empty — code adds chip pills here.'
-5. **Data / decoration on the image**: chart elements, callout numbers, icons, arrows, accent shapes etc that are part of the visual itself. Do NOT instruct the model to render any pill chips or supporting body text — code overlays those.
+4. **Typography (the words on the image — image model renders all of it):**
+   - HEADLINE (slideTitle, 3-6 words): big bold geometric sans, ~12% canvas height per cap, white on cobalt. Pick 1-2 KEY WORDS and wrap them in a tight coloured rectangle highlight block — yellow #FFD43B for positive accents, coral #ef4444 for tension, cream #faf6ee for emphasis. The rectangle hugs the letter cap-heights tightly.
+   - SUPPORTING LINE (slideBody, 8-18 words): one line in a slightly smaller bold sans, ~5-6% canvas height per cap, white on cobalt with 1-2 yellow-accented words.
+   - OPTIONAL SECOND LINE (slideExplainer, only if present and short): styled like the supporting line.
+   Spell every string inside double quotes verbatim so the model copies them. NO small body text, NO pill chips, NO source lines, NO callout labels.
+   Example: 'Render the headline "Don\\'t burst under pressure" with "Don\\'t burst" in big bold white and "under pressure" in heavy coral red on no plate, top-left over the burst shape, three lines stacked. Below in a small white sans: "A hot take on workplace stress" with "workplace" highlighted by a tight yellow rectangle.'
+5. **Hero visual**: a cobalt-blue ground with a real-photo cutout subject, a 3D rendered object, a photo collage, or a hand-drawn burst shape — described concretely. NO chart elements, NO leader-line callouts, NO pill chips.
 6. **Subject (if photo / 3D)**: be specific. Age, ethnicity (rotate), outfit, expression, posture, props. For 3D objects: lighting, perspective, materials.
 7. **Negative space + safe zone**: reserve a clean ~22% square in the TOP-LEFT corner for the brand logo overlay. No text or critical detail there. Say it explicitly.
 
-ON-IMAGE TEXT THE MODEL RENDERS: exactly the headline (3-6 words) and the subhead (6-12 words). NOTHING ELSE. The explainer paragraph and chip labels are rendered as crisp SVG text by CODE after the image is generated, because image models mangle small body text. Always instruct the model to leave the bottom band + chip strip empty.
+ON-IMAGE TEXT THE MODEL RENDERS: a HEADLINE (3-6 words) + SUPPORTING LINE (8-18 words) + OPTIONAL second line (0-15 words). All rendered LARGE — no small body text, no pill chips, no source lines, no callout labels. Total text on canvas should never exceed ~35 words including all spaces; otherwise it will be illegible at phone scale.
 
 CREATIVE-DIRECTION CHECKLIST (apply to every imagePrompt):
 - One specific concept, not "abstract energy".
@@ -446,48 +447,45 @@ export const rewriteSlidePrompt = createServerFn({ method: "POST" })
     const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
     const variationAxes = {
       composition: pick([
-        "centred symmetric grid",
-        "asymmetric two-thirds split (subject right, text left)",
-        "asymmetric two-thirds split (subject left, text right)",
-        "diagonal sweep with corner anchor",
-        "full-bleed centred hero with floating caption band",
-        "stacked rows: headline / hero / explainer column",
-        "scattered editorial collage with leader lines",
-        "vertical column with hero anchored bottom-third",
+        "subject centred over a burst-shape backdrop",
+        "subject right two-thirds, headline left third",
+        "subject left third, headline right two-thirds",
+        "headline top half, hero photo bottom half",
+        "hero top half (collage of 3 circle-cropped photos), headline + supporting line below",
+        "vertical split into two rounded panels (text left, photo right)",
+        "headline overlaid centred on top of a tilted device + subject",
+        "stacked rows: headline / hero / supporting line",
       ]),
       cameraOrAngle: pick([
-        "eye-level frontal",
-        "low-angle hero shot looking up",
-        "top-down flat-lay",
-        "three-quarter 45-degree perspective",
-        "isometric 30-degree",
-        "macro close-up of one detail with everything else falling out of focus",
-        "wide environmental establishing shot",
+        "eye-level frontal cutout",
+        "low-angle three-quarter cutout",
+        "subject mid-stride caught in motion",
+        "subject hugging knees seated",
+        "subject covering face / head obscured by a surreal prop",
+        "subject looking down at a tilted device under their feet",
       ]),
       paletteEmphasis: pick([
-        "dominant brand-primary background with a single accent flash",
-        "ivory/cream background with brand colours used only as accents",
-        "duotone composition (one brand colour + ink)",
-        "dark mode: deep navy ground with bright accent",
-        "warm-shadow palette: muted earth tones plus brand accent",
-        "high-contrast monochrome of one brand colour with white type",
+        "dominant cobalt-blue ground with yellow highlight blocks",
+        "cobalt with one large coral-red highlight word",
+        "paper-cream ground with cobalt panels",
+        "cobalt with white highlight rectangle behind a key word",
+        "halftone-dotted burst behind the subject in pale cobalt",
       ]),
       headlinePlacement: pick([
-        "top-left aligned masthead",
+        "top-left big bold",
         "top-centre cover-style",
-        "vertical sidebar headline running floor to ceiling",
-        "headline overlaid centre on top of the hero",
-        "bottom-band magazine-cover style",
-        "right-column masthead with hero on the left",
+        "headline overlaid centre across the hero",
+        "headline filling left-column panel of a vertical split",
+        "headline as a quote with massive pull-quote mark beside it",
       ]),
       hero: pick([
-        "photoreal 3D rendered object centred",
-        "real photograph of a young-adult subject (vary ethnicity, styling, setting)",
-        "isometric diorama scene with multiple labelled wedges",
-        "data-viz chart that IS the artwork (bars / pie / voronoi / gauge — pick one)",
-        "annotated still life with hand-drawn callout lines",
-        "split-screen comparison with two contrasting halves",
-        "abstract editorial illustration of the concept",
+        "real-photo cutout subject with a surreal prop on their head (traffic cone, alarm clock, paper bag)",
+        "3D rendered metaphor object (paper currency note bent into a loop, scrabble tiles spelling a word, polaroid frame)",
+        "photo collage of 3 circle-cropped images (faces, hands, devices)",
+        "subject standing on a tilted 3D device (phone, calendar grid, calculator)",
+        "subject covered or surrounded by hand-drawn yellow sticky notes",
+        "subject hugging knees with a heavy object (rock, books) balanced on their head",
+        "hand-drawn yellow starburst alone with the subject cutout in centre",
       ]),
     };
 
@@ -523,12 +521,12 @@ ${data.currentSlide.imagePrompt.slice(0, 1500)}
 
 Output: a single 220-340 word imagePrompt string (no JSON, no preamble), structured as:
 1) One-sentence concept of the new slide
-2) Composition + camera/render style (state spatial zones — top third, left column, etc)
-3) Palette: name two hex colours from the brand palette
-4) Typography directions for ONLY two text tiers using the exact strings above: HEADLINE (masthead display) and SUBHEAD (dek). Do NOT instruct the model to render the explainer paragraph or chip labels — code composites those as crisp SVG text afterwards. Tell the model to leave the bottom 26% of the canvas plus a 6% chip strip above it as quiet empty zones (subtle wash, flat colour) so the code overlay lands cleanly.
-5) Data / decoration on the image: chart elements, callout numbers, accent shapes — but no pill chips and no body paragraph text.
-6) If subject is a person, vary ethnicity/styling/environment from common defaults
-7) State the 22% top-left logo safe zone explicitly. NO URL, NO "www.", NO ".com", NO buttons, NO chips, NO paragraph text rendered on the canvas.
+2) Composition + spatial zones (top third, left column, etc) matching the assigned lane
+3) Palette: cobalt-blue #2b48e0 ground dominant, accents in yellow #FFD43B / coral #ef4444 / cream #faf6ee
+4) Typography for ALL text on canvas — image model renders it. HEADLINE (slideTitle, 3-6 words) big bold geometric sans, white on cobalt, with 1-2 KEY WORDS wrapped in a tight coloured rectangle highlight block. SUPPORTING LINE (slideBody, 8-18 words) smaller bold sans, 1-2 yellow-accented words. OPTIONAL second line (slideExplainer, if non-empty). Spell every string inside double quotes verbatim. NO small body text, NO chips, NO source lines.
+5) Hero visual: a cobalt ground with a real-photo cutout subject, a 3D rendered object, photo collage, or hand-drawn burst shape — concrete and surreal.
+6) If subject is a person, vary ethnicity/styling/expression/prop from common defaults
+7) State the 22% top-left logo safe zone explicitly. NO URL, NO "www.", NO ".com", NO buttons.
 
 Do NOT use em-dashes (U+2014) or en-dashes (U+2013). Output prose only.`;
 

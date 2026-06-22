@@ -172,44 +172,44 @@ export interface DesignLane {
 
 const LANES: DesignLane[] = [
   {
-    name: "3D isometric diorama",
-    brief: "Photoreal 3D isometric scene: a small landscape carved into wedges (forest, factory, classroom, etc.) at slight 3/4 perspective with shallow depth of field. Each wedge represents a category — label each with thin grey leader lines pointing to a percentage and one-line description. Magazine-masthead headline top-left in mixed editorial type (large sans or display serif + small italic dek). Source line at the bottom. Inspired by the Visual Capitalist 'U.S. Carbon Offsets' diorama and 'Renewable Energy by Country' panels.",
+    name: "Cutout subject on burst shape",
+    brief: "Cobalt-blue (#2b48e0) ground. A single real-photo CUTOUT young-adult subject (background removed) sits centre-canvas, often slightly tilted or breaking out of the frame, with a hand-drawn YELLOW jagged starburst or 8-point burst shape behind them at 70% canvas width. The subject can wear a surreal prop on their head (oversized traffic cone, paper bag, alarm clock) for emotional shorthand. Big bold WHITE headline (3-5 words) overlaid LEFT-of-subject, with 1-2 key words highlighted by a coral or yellow rectangle block tight to the letters.",
   },
   {
-    name: "Photo-textured stacked bars",
-    brief: "Stacked bar chart with 4-5 columns running across the canvas, each segment filled with a real photographic texture relevant to the category (e.g. flooded street, wildfire, drought field). Numbers in white sit ON the segments; column totals sit above. Headline top-left in a heavy display sans with one word italic-accented in brand yellow or coral. Inspired by the Visual Capitalist 'Rising Cost of Climate Events' chart.",
+    name: "Photo collage circles",
+    brief: "Cobalt-blue ground. THREE overlapping circle-cropped photographs at the TOP of the canvas (~45% of height) — each circle holds a different cutout subject or prop (a face, a hand holding cash, a calculator on phone). One circle larger and centred, two smaller flanking. Below the circles a WHITE highlight-block headline (3-6 words on a white rectangle, navy/cobalt text on top), then a short supporting line in white with 1-2 yellow-highlighted words. Right arrow icon bottom-right.",
   },
   {
-    name: "Half-circle gauge with photoreal hero",
-    brief: "A horizon-style half-rainbow gauge ($0 on the left, $100 on the right) sweeps across the upper half, gradient-coloured red→amber→green. Country/category labels with circular flag chips sit along the curve. Below, a single photoreal 3D rendered object (a coin, a globe, a passport) anchors the canvas. Magazine-cover headline above the gauge — mixed Saol/Tiempos display serif with a small all-caps eyebrow. Source line at the bottom. Inspired by Visual Capitalist 'Where Does $100 Lose the Most Value'.",
+    name: "Highlight-block text poster",
+    brief: "Cobalt-blue ground, TEXT-DOMINANT — minimal or no imagery. Big bold white headline (4-8 words) fills the upper canvas with TWO key words wrapped in YELLOW rectangle highlight blocks tight to the letters. Below: ONE supporting line (8-15 words) in white, with 1-2 yellow-accented words. Optional small surreal prop or quote-mark graphic in a corner. Reads like a pull-quote poster.",
   },
   {
-    name: "Voronoi inside a 3D vessel",
-    brief: "A 3D rendered vessel (a bowl, a globe, a translucent box, a cupped hand) sits centre-frame with a voronoi-style data partition mapped onto its visible surface. Each cell is a category with a flag chip + a number ($, %, count). Vessel rim has soft shadowing. Magazine-cover headline above the vessel in mixed serif+sans display type, one word HUGE and overflowing slightly. Background is a clean brand-palette gradient. Inspired by Visual Capitalist 'The 30 Largest Exporters of Food'.",
+    name: "Object-as-metaphor centrepiece",
+    brief: "Cobalt-blue or paper-textured ground. A single photoreal 3D rendered OBJECT serves as the metaphor for the topic, centred (e.g. a paper currency note bent into a loop with a tiny suited figure running inside it, scrabble letter tiles spelling a word, a green alarm clock surrounded by scattered letter tiles spelling 'PAYDAY', a polaroid-frame containing a person). White headline above in a highlight block (4-7 words). Object is the hero — bold, surreal, slightly playful.",
   },
   {
-    name: "Character-cutout bar chart",
-    brief: "Tall, narrow vertical bars stacked side-by-side, each bar topped with a photoreal cutout 'character' representing the category (a graduate, a CV stack, a software icon, etc.) — same trick as the VC blockbusters chart but using career/student themes. Year or category labels at the base of each bar. Cinematic textured sky background (golden hour or storm). Heavy condensed-sans masthead headline top-left, one word italic-accented. Inspired by Visual Capitalist 'Biggest Summer Blockbusters'.",
+    name: "Side-by-side panel comparison",
+    brief: "Canvas split vertically into two ROUNDED-CORNER panels with a thin white gap between them. Left panel is solid cobalt-blue and holds a 4-8 word question or statement in big bold white type with 1-2 yellow-highlighted words. Right panel is a paper-cut photograph — a real-photo cutout subject standing on or interacting with a slanted graphic device (a tilted blue calendar grid, a phone-frame, a scrabble board). Cream / off-white paper background OUTSIDE the panels.",
   },
   {
-    name: "Magazine cover stat",
-    brief: "A single shock stat at huge scale dominates the top two-thirds, rendered in mixed editorial type (display serif numerals + italic accent word). Beneath: a smaller dek explaining the stat, then a horizontal row of 3-4 mini-stat callouts with thin leader lines pointing into a photoreal 3D rendered object that anchors the bottom. Source line at the very bottom. Reads like a magazine cover essay.",
+    name: "Sticky-note overload",
+    brief: "Top 50% of canvas: cobalt-blue ground with 3-4 lines of bold white statements (sentences stacked, ONE key word highlighted in yellow on the final line). Bottom 50%: real photograph of a person covered/surrounded by HAND-WRITTEN STICKY NOTES (yellow squares with sketchy black ink labels — but the labels should look like real handwriting blobs, not crisp typography). Sticky notes on the face, shirt, table.",
   },
   {
-    name: "Annotated photograph",
-    brief: "One full-bleed photoreal photograph of a real young-adult subject in a specific environment (a tube platform, a library nook, a co-working space, a kitchen at 11pm). Thin white leader lines connect 3-4 callout labels with stats, decisions or scripts to specific elements of the photo. Magazine-masthead headline runs across the top in a heavy geometric sans with one italic accent word.",
+    name: "Bullet-list payoff",
+    brief: "Used for OUTRO slides. Cobalt-blue or cream paper ground. TOP-LEFT a 'Before assuming the worst:' or 'Here is what to do:' opener in white, then a 3-4 BULLET LIST below (round white bullets, simple short phrases 2-4 words each). Bottom area: a real-photo cutout of a subject hugging knees or sitting on a chair with a surreal heavy object (a rock, a stack of books) balanced on their head, against a halftone-dotted blue burst shape.",
   },
   {
-    name: "Comparison split poster",
-    brief: "Canvas split vertically (or diagonally) into two contrasting halves — one in warm brand palette, one in cool. Each half holds a label, a big stat and one supporting photoreal 3D object. Centre seam has a vertical 'VS' or year band. Headline runs across the top in mixed serif + sans editorial type. Cinematic shadows.",
+    name: "Quote-mark callout",
+    brief: "Cobalt-blue ground with a paper-textured rectangle highlight block containing the headline (4-8 words) styled as a QUOTE — large bold cobalt text on yellow / cream rectangle. To the side: a giant photoreal pull-quote mark (99 or 66) tilted at an angle, rendered as a paper cutout. Below the quote: 2 short supporting lines (8-15 words total) in white on cobalt with 1-2 yellow-highlighted words.",
   },
   {
-    name: "Process-flow infographic",
-    brief: "A horizontal or staircase process flow with 3-5 numbered steps, each step a small photoreal 3D vignette (a CV, a calendar, a video call, a handshake) connected by thin lines with arrows. Step labels and a short tactic per step. Magazine-masthead headline top in mixed editorial type. Subtle grain texture and brand-palette wash.",
+    name: "Phone-mockup hero",
+    brief: "Cobalt-blue ground. A real-photo iPhone-frame mockup sits centre or slightly off-centre, screen showing a calculator / messaging / banking app interface (real numerals on screen). Around the phone: a hand holding it, plus subtle scattered confetti of paper money or coins. Above the phone: a 3-5 word white headline with 1-2 yellow-highlighted words. The phone IS the hero.",
   },
   {
-    name: "Editorial portrait + data card",
-    brief: "Three-quarter editorial portrait of a real young-adult subject occupying 60% of the canvas (offset right). On the empty 40% to the left, a stack of overlapping data cards (each card carries one stat with a tiny icon, source and percentage). Magazine-cover headline top in mixed serif+sans, italic accent. Soft natural light, Kinfolk colour grade.",
+    name: "Tilted device + standing subject",
+    brief: "Used for COVER slides. Canvas split vertically. Left panel solid cobalt-blue with a 6-10 word question in big bold white type, 1-2 yellow-highlighted words. Right panel: a TILTED 3D rendered blue device (calendar grid, phone, computer screen) at a dramatic angle with a real-photo cutout subject standing ON the device, looking down at it. Cream/paper background around the panels. Slightly surreal, dimensional.",
   },
 ];
 
