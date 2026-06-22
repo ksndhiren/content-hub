@@ -440,6 +440,57 @@ export const rewriteSlidePrompt = createServerFn({ method: "POST" })
       ? "COVER (scroll-stopper hook)"
       : "BODY (one specific point of the story)";
 
+    // Force divergence by randomly picking a different value on each axis
+    // each call. Without this, the model converges on the same look because
+    // brand style + lane + copy are all constant.
+    const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+    const variationAxes = {
+      composition: pick([
+        "centred symmetric grid",
+        "asymmetric two-thirds split (subject right, text left)",
+        "asymmetric two-thirds split (subject left, text right)",
+        "diagonal sweep with corner anchor",
+        "full-bleed centred hero with floating caption band",
+        "stacked rows: headline / hero / explainer column",
+        "scattered editorial collage with leader lines",
+        "vertical column with hero anchored bottom-third",
+      ]),
+      cameraOrAngle: pick([
+        "eye-level frontal",
+        "low-angle hero shot looking up",
+        "top-down flat-lay",
+        "three-quarter 45-degree perspective",
+        "isometric 30-degree",
+        "macro close-up of one detail with everything else falling out of focus",
+        "wide environmental establishing shot",
+      ]),
+      paletteEmphasis: pick([
+        "dominant brand-primary background with a single accent flash",
+        "ivory/cream background with brand colours used only as accents",
+        "duotone composition (one brand colour + ink)",
+        "dark mode: deep navy ground with bright accent",
+        "warm-shadow palette: muted earth tones plus brand accent",
+        "high-contrast monochrome of one brand colour with white type",
+      ]),
+      headlinePlacement: pick([
+        "top-left aligned masthead",
+        "top-centre cover-style",
+        "vertical sidebar headline running floor to ceiling",
+        "headline overlaid centre on top of the hero",
+        "bottom-band magazine-cover style",
+        "right-column masthead with hero on the left",
+      ]),
+      hero: pick([
+        "photoreal 3D rendered object centred",
+        "real photograph of a young-adult subject (vary ethnicity, styling, setting)",
+        "isometric diorama scene with multiple labelled wedges",
+        "data-viz chart that IS the artwork (bars / pie / voronoi / gauge — pick one)",
+        "annotated still life with hand-drawn callout lines",
+        "split-screen comparison with two contrasting halves",
+        "abstract editorial illustration of the concept",
+      ]),
+    };
+
     const userMsg = `Year: ${year}. Brand: ${brand.name} (${brand.industry}). Audience: ${brand.audience}.
 Brand colours: ${(brand.colors ?? []).join(", ")}
 Brand visual style (BAKE INTO PROMPT):
@@ -456,6 +507,14 @@ THE COPY ON THIS SLIDE IS FIXED. Do not rewrite it. Build the new imagePrompt ar
   CHIPS   : ${(data.currentSlide.chipLabels ?? []).map((c) => `"${c}"`).join(", ") || "(none)"}
 
 YOUR JOB: Produce ONE fresh imagePrompt that gives this slide a NEW visual interpretation. Same role, same lane, same copy — but a deliberately DIFFERENT composition, camera/render angle, palette emphasis, and accent treatment. The user has clicked Regenerate because the previous take wasn't right; do not repeat its specific framing.
+
+REQUIRED VARIATION AXES FOR THIS REGENERATION (use these as hard constraints — they were chosen specifically to push you away from the prior take):
+- Composition: ${variationAxes.composition}
+- Camera / angle: ${variationAxes.cameraOrAngle}
+- Palette emphasis: ${variationAxes.paletteEmphasis}
+- Headline placement: ${variationAxes.headlinePlacement}
+- Hero treatment: ${variationAxes.hero}
+Build the prompt around these axes verbatim. Translate them into specific spatial / hex / typeface directives. If any axis conflicts with the assigned lane, lean into the lane but pick the closest sub-treatment that honours the axis spirit.
 
 PRIOR PROMPT (vary AWAY from this — do not echo its composition, camera, palette emphasis or accent placement):
 """
