@@ -82,7 +82,7 @@ export const initialBrands: Brand[] = [
     status: "Active",
     gradient: "gradient-1",
     initials: "IW",
-    website: "www.internwise.com",
+    website: "www.internwise.co.uk",
     colors: ["#1f4789", "#3eb5e4", "#ff9a60"],
     logoUrl: "https://internwise.com/logo-horizontal.png",
     iconUrl: "https://www.google.com/s2/favicons?domain=internwise.com&sz=128",
